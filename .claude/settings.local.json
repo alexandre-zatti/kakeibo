@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(pnpm create:*)",
+      "Bash(npm install:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm add:*)",
+      "Bash(npx prisma init)",
+      "Bash(npx better-auth:*)",
+      "Bash(pnpm exec better-auth:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(pnpm exec prisma:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Initialize Next.js 15 production application\n\nSet up a complete production-ready Next.js fullstack application with:\n\nCore Stack:\n- Next.js 15.5.9 with App Router and TypeScript\n- React 19.2.3 with React Compiler enabled\n- Tailwind CSS 3.4.19 with shadcn/ui components\n- pnpm as package manager\n\nDatabase & Authentication:\n- Prisma 7.2.0 ORM configured for PostgreSQL\n- Better Auth 1.4.9 with Prisma adapter\n- Email/password authentication enabled\n- Database schema with User, Session, Account, and Verification models\n\nDevelopment Tools:\n- Pino logger with pretty printing in development\n- Zod for schema validation\n- React Hook Form for form handling\n- date-fns for date utilities\n- Prettier + ESLint configured\n\nProject Structure:\n- Auth pages \\(/login, /signup\\)\n- Dashboard page \\(/dashboard\\)\n- API routes for authentication \\(/api/auth/*\\)\n- Component library setup \\(shadcn/ui\\)\n- Utility libraries \\(logger, Prisma client\\)\n\nConfiguration:\n- Environment variables template \\(.env.example\\)\n- TypeScript strict mode enabled\n- Prettier with Tailwind plugin\n- ESLint with Next.js and Prettier integration\n- Comprehensive setup documentation \\(SETUP.md\\)\n\n🤖 Generated with Claude Code \\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}
