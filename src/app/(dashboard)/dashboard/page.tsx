@@ -8,9 +8,7 @@ export default function DashboardPage() {
       </header>
       <main className="flex-1 p-8">
         <h2 className="mb-4 text-2xl font-bold">Welcome to your dashboard</h2>
-        <p className="text-muted-foreground">
-          Start tracking your finances with Kakeibo.
-        </p>
+        <p className="text-muted-foreground">Start tracking your finances with Kakeibo.</p>
       </main>
     </div>
   );

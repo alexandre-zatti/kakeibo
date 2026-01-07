@@ -1,29 +1,62 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["kakeibo"]
 }
 
-// Better Auth Models
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+model Purchase {
+  id         Int       @id @default(autoincrement())
+  createdAt  DateTime? @map("created_at")
+  updatedAt  DateTime? @map("updated_at")
+  status     Int?
+  totalValue Decimal?  @map("total_value") @db.Decimal(10, 2)
+  boughtAt   DateTime? @map("bought_at")
 
-  accounts      Account[]
-  sessions      Session[]
+  products Product[]
+
+  @@map("purchase")
+  @@schema("kakeibo")
+}
+
+model Product {
+  id             Int       @id @default(autoincrement())
+  createdAt      DateTime? @map("created_at")
+  updatedAt      DateTime? @map("updated_at")
+  code           String?   @db.VarChar(255)
+  description    String?   @db.VarChar(255)
+  unitValue      Decimal?  @map("unit_value") @db.Decimal(10, 2)
+  unitIdentifier String?   @map("unit_identifier") @db.VarChar(10)
+  quantity       Decimal?  @db.Decimal(10, 2)
+  totalValue     Decimal?  @map("total_value") @db.Decimal(10, 2)
+  purchaseId     Int?      @map("purchase_id")
+
+  purchase Purchase? @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+
+  @@map("product")
+  @@schema("kakeibo")
+}
+
+// =============================================================================
+// Better Auth Models
+// =============================================================================
+
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+
+  @@map("user")
+  @@schema("kakeibo")
 }
 
 model Session {
@@ -37,6 +70,9 @@ model Session {
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+  @@schema("kakeibo")
 }
 
 model Account {
@@ -55,6 +91,8 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([providerId, accountId])
+  @@map("account")
+  @@schema("kakeibo")
 }
 
 model Verification {
@@ -66,4 +104,6 @@ model Verification {
   updatedAt  DateTime @updatedAt
 
   @@unique([identifier, value])
+  @@map("verification")
+  @@schema("kakeibo")
 }
