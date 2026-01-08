@@ -36,17 +36,14 @@ COPY . .
 # Generate Prisma client (required before build)
 RUN pnpm exec prisma generate
 
-# Accept build arguments for environment variables
-ARG BETTER_AUTH_SECRET
-ARG BETTER_AUTH_URL
+# Accept build arguments for public environment variables only
+# NEXT_PUBLIC_* vars are inlined into the JS bundle at build time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
 
 # Set environment variables for build
-# These are build-time only, runtime values are passed via docker run
+# Note: BETTER_AUTH_SECRET and BETTER_AUTH_URL are runtime-only (passed via docker run)
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-ENV BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
-ENV BETTER_AUTH_URL=${BETTER_AUTH_URL}
 ENV NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL}
 
 # Build the application
@@ -82,9 +79,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy Prisma schema and migrations for runtime migrations
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+
+# Install Prisma CLI for migrations (npm works better than pnpm for minimal installs)
+RUN npm install --no-save prisma@7.2.0
 
 # Copy entrypoint script
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
