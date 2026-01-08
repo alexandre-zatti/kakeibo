@@ -36,10 +36,18 @@ COPY . .
 # Generate Prisma client (required before build)
 RUN pnpm exec prisma generate
 
+# Accept build arguments for environment variables
+ARG BETTER_AUTH_SECRET
+ARG BETTER_AUTH_URL
+ARG NEXT_PUBLIC_BETTER_AUTH_URL
+
 # Set environment variables for build
 # These are build-time only, runtime values are passed via docker run
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+ENV BETTER_AUTH_URL=${BETTER_AUTH_URL}
+ENV NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL}
 
 # Build the application
 RUN pnpm build
