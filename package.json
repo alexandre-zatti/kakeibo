@@ -1,5 +1,6 @@
 {
   "name": "kakeibo",
+  "description": "Teste"
   "version": "0.1.0",
   "private": true,
   "pnpm": {
