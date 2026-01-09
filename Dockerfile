@@ -59,6 +59,9 @@ FROM node:22-alpine AS runner
 
 WORKDIR /app
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 # Set production environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
