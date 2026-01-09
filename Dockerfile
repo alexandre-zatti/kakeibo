@@ -77,11 +77,12 @@ RUN mkdir -p .next && chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema and migrations for runtime migrations
+# Copy Prisma schema, migrations, and config for runtime migrations
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
-# Install Prisma CLI in isolated directory (avoids conflicts with pnpm node_modules)
-RUN mkdir -p /prisma-cli && cd /prisma-cli && npm init -y && npm install prisma@7.2.0
+# Install Prisma CLI with dependencies for config file (dotenv, tsx for TypeScript)
+RUN mkdir -p /prisma-cli && cd /prisma-cli && npm init -y && npm install prisma@7.2.0 dotenv tsx
 
 # Copy entrypoint script
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
