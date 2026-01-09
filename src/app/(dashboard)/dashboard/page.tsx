@@ -17,7 +17,7 @@ export default async function DashboardPage() {
       <h1 className="text-2xl font-bold">
         Welcome{session.user.name ? `, ${session.user.name}` : ""}
       </h1>
-      <p className="text-muted-foreground">Start tracking your finances with Kakeibo.</p>
+      <p className="text-muted-foreground">Teste Start tracking your finances with Kakeibo.</p>
     </div>
   );
 }
