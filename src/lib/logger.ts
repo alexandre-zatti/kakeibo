@@ -21,3 +21,19 @@ const logger = pino({
 });
 
 export default logger;
+
+/**
+ * Serialize an error for structured logging.
+ * Extracts name, message, and stack (dev only) from Error objects.
+ */
+export function serializeError(error: unknown): Record<string, unknown> {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      ...(error.cause ? { cause: serializeError(error.cause) } : {}),
+    };
+  }
+  return { message: String(error) };
+}
