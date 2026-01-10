@@ -11,10 +11,13 @@ model Purchase {
   id         Int       @id @default(autoincrement())
   createdAt  DateTime? @map("created_at")
   updatedAt  DateTime? @map("updated_at")
-  status     Int?
+  status     Int? // 1=approved, 2=needs_review
   totalValue Decimal?  @map("total_value") @db.Decimal(10, 2)
   boughtAt   DateTime? @map("bought_at")
+  storeName  String?   @map("store_name") @db.VarChar(255)
+  userId     String    @map("user_id")
 
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   products Product[]
 
   @@map("purchase")
@@ -52,8 +55,9 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  accounts Account[]
-  sessions Session[]
+  accounts  Account[]
+  sessions  Session[]
+  purchases Purchase[]
 
   @@map("user")
   @@schema("kakeibo")
