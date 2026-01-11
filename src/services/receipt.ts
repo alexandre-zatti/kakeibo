@@ -7,18 +7,22 @@ export interface ScanReceiptResult {
   id: number;
   storeName: string | null;
   totalValue: number;
-  boughtAt: Date | null;
+  boughtAt: Date;
   productCount: number;
 }
 
 /**
  * Scans receipt images using Gemini AI and saves the extracted data to the database
  */
-export async function scanReceipt(userId: string, images: string[]): Promise<ScanReceiptResult> {
-  logger.info({ userId, imageCount: images.length }, "Processing receipt scan");
+export async function scanReceipt(
+  userId: string,
+  images: string[],
+  isLongReceiptMode: boolean = false
+): Promise<ScanReceiptResult> {
+  logger.info({ userId, imageCount: images.length, isLongReceiptMode }, "Processing receipt scan");
 
   // Send to Gemini API for extraction
-  const rawData = await extractReceiptData(images);
+  const rawData = await extractReceiptData(images, isLongReceiptMode);
 
   // Validate LLM response with Zod
   const validationResult = receiptDataSchema.safeParse(rawData);
@@ -29,8 +33,8 @@ export async function scanReceipt(userId: string, images: string[]): Promise<Sca
 
   const receiptData = validationResult.data;
 
-  // Parse date if provided
-  let boughtAt: Date | null = null;
+  // Parse date if provided, default to current date if not found
+  let boughtAt: Date = new Date();
   if (receiptData.purchaseDate) {
     const parsed = new Date(receiptData.purchaseDate);
     if (!isNaN(parsed.getTime())) {
@@ -70,7 +74,7 @@ export async function scanReceipt(userId: string, images: string[]): Promise<Sca
     id: purchase.id,
     storeName: purchase.storeName,
     totalValue: Number(purchase.totalValue),
-    boughtAt: purchase.boughtAt,
+    boughtAt, // Use the variable we set (always has a value)
     productCount: purchase.products.length,
   };
 }

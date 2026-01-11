@@ -84,7 +84,8 @@ export async function deletePurchaseAction(purchaseId: number): Promise<ActionRe
 }
 
 export async function scanReceiptAction(
-  images: string[]
+  images: string[],
+  isLongReceiptMode: boolean = false
 ): Promise<ActionResult<ScanReceiptResult>> {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -99,7 +100,7 @@ export async function scanReceiptAction(
       return { success: false, error: "Invalid input: Please provide 1-3 images" };
     }
 
-    const result = await scanReceipt(session.user.id, parseResult.data.images);
+    const result = await scanReceipt(session.user.id, parseResult.data.images, isLongReceiptMode);
 
     revalidatePath("/groceries");
 

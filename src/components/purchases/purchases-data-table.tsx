@@ -48,12 +48,8 @@ export function PurchasesDataTable({ data }: PurchasesDataTableProps) {
     from: undefined,
     to: undefined,
   });
-  const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({
-    min: "",
-    max: "",
-  });
 
-  // Apply date and price filters to data
+  // Apply date filter to data
   const filteredData = useMemo(() => {
     return data.filter((purchase) => {
       // Date range filter
@@ -64,14 +60,9 @@ export function PurchasesDataTable({ data }: PurchasesDataTableProps) {
         if (dateRange.to && purchaseDate > dateRange.to) return false;
       }
 
-      // Price range filter
-      const price = purchase.totalValue ? Number(purchase.totalValue) : 0;
-      if (priceRange.min && price < parseFloat(priceRange.min)) return false;
-      if (priceRange.max && price > parseFloat(priceRange.max)) return false;
-
       return true;
     });
-  }, [data, dateRange, priceRange]);
+  }, [data, dateRange]);
 
   const table = useReactTable({
     data: filteredData,
@@ -97,13 +88,7 @@ export function PurchasesDataTable({ data }: PurchasesDataTableProps) {
 
   return (
     <div className="space-y-4">
-      <PurchasesToolbar
-        table={table}
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-        priceRange={priceRange}
-        onPriceRangeChange={setPriceRange}
-      />
+      <PurchasesToolbar table={table} dateRange={dateRange} onDateRangeChange={setDateRange} />
 
       {isMobile ? (
         <PurchasesMobileCards rows={table.getRowModel().rows} />
