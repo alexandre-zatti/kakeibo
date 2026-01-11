@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { PurchaseRowActions } from "./purchases-row-actions";
 import { PurchaseStatus, PurchaseStatusConfig } from "@/types/purchase";
 import type { PurchaseWithCount } from "@/types/purchase";
+import { formatCurrency } from "@/lib/utils";
 
 interface PurchasesMobileCardsProps {
   rows: Row<PurchaseWithCount>[];
@@ -38,24 +39,15 @@ export function PurchasesMobileCards({ rows }: PurchasesMobileCardsProps) {
           <Card key={purchase.id}>
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
               <CardTitle className="text-base font-medium">
-                {purchase.storeName || "Unknown Store"}
+                {date ? format(date, "MMM d, yyyy") : "Unknown Date"}
               </CardTitle>
               <PurchaseRowActions purchase={purchase} />
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Date</span>
-                <span>{date ? format(date, "MMM d, yyyy") : "-"}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Total</span>
                 <span className="font-medium">
-                  {totalValue !== null
-                    ? new Intl.NumberFormat("en-US", {
-                        style: "currency",
-                        currency: "USD",
-                      }).format(totalValue)
-                    : "-"}
+                  {totalValue !== null ? formatCurrency(totalValue) : "-"}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">

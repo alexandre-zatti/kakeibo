@@ -8,27 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { PurchaseRowActions } from "./purchases-row-actions";
 import { PurchaseStatus, PurchaseStatusConfig } from "@/types/purchase";
 import type { PurchaseWithCount } from "@/types/purchase";
+import { formatCurrency } from "@/lib/utils";
 
 export const purchasesColumns: ColumnDef<PurchaseWithCount>[] = [
-  {
-    accessorKey: "storeName",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="-ml-4"
-        >
-          Store
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const storeName = row.getValue("storeName") as string | null;
-      return <div className="font-medium">{storeName || "Unknown Store"}</div>;
-    },
-  },
   {
     accessorKey: "boughtAt",
     header: ({ column }) => {
@@ -67,11 +49,7 @@ export const purchasesColumns: ColumnDef<PurchaseWithCount>[] = [
     cell: ({ row }) => {
       const value = row.getValue("totalValue") as number | null;
       if (value === null) return <span className="text-muted-foreground">-</span>;
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(value);
-      return <div className="font-medium">{formatted}</div>;
+      return <div className="font-medium">{formatCurrency(value)}</div>;
     },
   },
   {
