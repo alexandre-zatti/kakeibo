@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   experimental: {
     reactCompiler: true,
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
   },
 };
 

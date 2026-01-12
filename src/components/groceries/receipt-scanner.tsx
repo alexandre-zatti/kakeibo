@@ -150,7 +150,9 @@ export function ReceiptScanner() {
     <div className="flex flex-col gap-4">
       {/* Image previews */}
       {images.length > 0 && (
-        <div className={`grid gap-2 ${isLongReceiptMode ? "grid-cols-3" : "grid-cols-1"}`}>
+        <div
+          className={`mx-auto grid max-w-sm gap-2 ${isLongReceiptMode ? "grid-cols-3" : "grid-cols-1"}`}
+        >
           {images.map((img, index) => (
             <Card key={index} className="relative aspect-[3/4] overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
