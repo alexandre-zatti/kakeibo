@@ -22,6 +22,7 @@ interface ScanSuccess {
 export function ReceiptScanner() {
   const router = useRouter();
   const [images, setImages] = React.useState<string[]>([]);
+  const [scannedImages, setScannedImages] = React.useState<string[]>([]);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<ScanSuccess | null>(null);
@@ -89,6 +90,7 @@ export function ReceiptScanner() {
       }
 
       if (result.data) {
+        setScannedImages(images);
         setSuccess(result.data);
         setImages([]);
         setIsLongReceiptMode(false);
@@ -112,6 +114,7 @@ export function ReceiptScanner() {
   const handleScanAnother = () => {
     setSuccess(null);
     setImages([]);
+    setScannedImages([]);
     setError(null);
   };
 
@@ -119,6 +122,26 @@ export function ReceiptScanner() {
   if (success) {
     return (
       <div className="flex flex-col gap-4">
+        {/* Scanned image preview - same sizing as upload preview */}
+        <div
+          className={`mx-auto grid max-w-sm gap-2 ${
+            scannedImages.length > 1 ? "grid-cols-3" : "grid-cols-1"
+          }`}
+        >
+          {scannedImages.map((img, index) => (
+            <Card key={index} className="relative aspect-[3/4] overflow-hidden">
+              {/* Native <img> required: Next.js Image doesn't support data URLs in src.
+                  These are temporary base64 previews that don't benefit from optimization. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`data:image/jpeg;base64,${img}`}
+                alt={`Scanned receipt ${index + 1}`}
+                className="h-full w-full object-cover"
+              />
+            </Card>
+          ))}
+        </div>
+
         <Card className="bg-green-50 p-4 dark:bg-green-950">
           <div className="flex flex-col gap-2">
             <h3 className="font-semibold text-green-800 dark:text-green-200">
@@ -155,6 +178,8 @@ export function ReceiptScanner() {
         >
           {images.map((img, index) => (
             <Card key={index} className="relative aspect-[3/4] overflow-hidden">
+              {/* Native <img> required: Next.js Image doesn't support data URLs in src.
+                  These are temporary base64 previews that don't benefit from optimization. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`data:image/jpeg;base64,${img}`}
