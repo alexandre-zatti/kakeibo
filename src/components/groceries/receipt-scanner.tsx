@@ -1,31 +1,22 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { Camera, Upload, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { PurchaseReview } from "./purchase-review";
 import { scanReceiptAction } from "@/actions/purchase";
 import { clientLogger } from "@/lib/client-logger";
-import { formatCurrency } from "@/lib/utils";
-
-interface ScanSuccess {
-  id: number;
-  storeName: string | null;
-  totalValue: number;
-  boughtAt: Date;
-  productCount: number;
-}
+import type { PurchaseWithProducts } from "@/types/purchase";
 
 export function ReceiptScanner() {
-  const router = useRouter();
   const [images, setImages] = React.useState<string[]>([]);
   const [scannedImages, setScannedImages] = React.useState<string[]>([]);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState<ScanSuccess | null>(null);
+  const [purchase, setPurchase] = React.useState<PurchaseWithProducts | null>(null);
   const [isLongReceiptMode, setIsLongReceiptMode] = React.useState(false);
 
   const maxImages = isLongReceiptMode ? 3 : 1;
@@ -80,7 +71,7 @@ export function ReceiptScanner() {
 
     setIsProcessing(true);
     setError(null);
-    setSuccess(null);
+    setPurchase(null);
 
     try {
       const result = await scanReceiptAction(images, isLongReceiptMode);
@@ -91,7 +82,7 @@ export function ReceiptScanner() {
 
       if (result.data) {
         setScannedImages(images);
-        setSuccess(result.data);
+        setPurchase(result.data.purchase);
         setImages([]);
         setIsLongReceiptMode(false);
       }
@@ -103,69 +94,21 @@ export function ReceiptScanner() {
     }
   };
 
-  const handleViewPurchase = () => {
-    if (success) {
-      // Navigate to the groceries page for now
-      // Future: router.push(`/groceries/purchases/${success.id}/review`);
-      router.push("/groceries");
-    }
-  };
-
   const handleScanAnother = () => {
-    setSuccess(null);
+    setPurchase(null);
     setImages([]);
     setScannedImages([]);
     setError(null);
   };
 
-  // Success state
-  if (success) {
+  // Show purchase review after successful scan
+  if (purchase) {
     return (
-      <div className="flex flex-col gap-4">
-        {/* Scanned image preview - same sizing as upload preview */}
-        <div
-          className={`mx-auto grid max-w-sm gap-2 ${
-            scannedImages.length > 1 ? "grid-cols-3" : "grid-cols-1"
-          }`}
-        >
-          {scannedImages.map((img, index) => (
-            <Card key={index} className="relative aspect-[3/4] overflow-hidden">
-              {/* Native <img> required: Next.js Image doesn't support data URLs in src.
-                  These are temporary base64 previews that don't benefit from optimization. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`data:image/jpeg;base64,${img}`}
-                alt={`Scanned receipt ${index + 1}`}
-                className="h-full w-full object-cover"
-              />
-            </Card>
-          ))}
-        </div>
-
-        <Card className="bg-green-50 p-4 dark:bg-green-950">
-          <div className="flex flex-col gap-2">
-            <h3 className="font-semibold text-green-800 dark:text-green-200">
-              Receipt Scanned Successfully!
-            </h3>
-            <div className="text-sm text-green-700 dark:text-green-300">
-              {success.storeName && <p>Store: {success.storeName}</p>}
-              <p>Total: {formatCurrency(success.totalValue)}</p>
-              <p>Items: {success.productCount}</p>
-              <p>Date: {new Date(success.boughtAt).toLocaleDateString()}</p>
-            </div>
-            <p className="mt-2 text-xs text-green-600 dark:text-green-400">
-              This purchase has been saved for review. You can approve it later.
-            </p>
-          </div>
-        </Card>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" onClick={handleScanAnother}>
-            Scan Another
-          </Button>
-          <Button onClick={handleViewPurchase}>View Groceries</Button>
-        </div>
-      </div>
+      <PurchaseReview
+        purchase={purchase}
+        scannedImages={scannedImages}
+        onScanAnother={handleScanAnother}
+      />
     );
   }
 
