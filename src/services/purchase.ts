@@ -66,10 +66,11 @@ export async function getPurchases(options: GetPurchasesOptions): Promise<Purcha
 
     serviceLogger.debug({ userId, count: purchases.length }, "Purchases fetched");
 
-    // Convert Decimal to number for serialization
+    // Convert Decimal to number and Date to ISO string for serialization
     return purchases.map((p) => ({
       ...p,
       totalValue: p.totalValue ? Number(p.totalValue) : null,
+      boughtAt: p.boughtAt ? p.boughtAt.toISOString() : null,
     }));
   } catch (error) {
     serviceLogger.error({ error: serializeError(error), userId }, "Failed to fetch purchases");
@@ -100,6 +101,7 @@ export async function getPurchaseById(
     return {
       ...purchase,
       totalValue: purchase.totalValue ? Number(purchase.totalValue) : null,
+      boughtAt: purchase.boughtAt ? purchase.boughtAt.toISOString() : null,
       products: purchase.products.map((p) => ({
         ...p,
         unitValue: p.unitValue ? Number(p.unitValue) : null,

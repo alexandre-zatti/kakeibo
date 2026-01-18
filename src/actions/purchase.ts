@@ -40,11 +40,14 @@ export async function updatePurchaseAction(
 
     const data = parseResult.data;
 
-    const result = await updatePurchase(purchaseId, session.user.id, {
-      storeName: data.storeName,
-      boughtAt: data.boughtAt ? new Date(data.boughtAt) : null,
-      status: data.status,
-    });
+    // Only include fields that were actually provided to avoid overwriting with null
+    const updateData: Parameters<typeof updatePurchase>[2] = {};
+    if (data.storeName !== undefined) updateData.storeName = data.storeName;
+    if (data.boughtAt !== undefined)
+      updateData.boughtAt = data.boughtAt ? new Date(data.boughtAt) : null;
+    if (data.status !== undefined) updateData.status = data.status;
+
+    const result = await updatePurchase(purchaseId, session.user.id, updateData);
 
     if (!result) {
       return { success: false, error: "Purchase not found or access denied" };

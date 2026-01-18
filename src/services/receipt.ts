@@ -1,14 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { extractReceiptData } from "@/lib/gemini";
 import { receiptDataSchema } from "@/lib/schemas/receipt";
+import type { PurchaseWithProducts } from "@/types/purchase";
 import logger from "@/lib/logger";
 
 export interface ScanReceiptResult {
-  id: number;
-  storeName: string | null;
-  totalValue: number;
-  boughtAt: Date;
-  productCount: number;
+  purchase: PurchaseWithProducts;
 }
 
 /**
@@ -70,11 +67,18 @@ export async function scanReceipt(
 
   logger.info({ purchaseId: purchase.id, productCount: purchase.products.length }, "Receipt saved");
 
+  // Serialize Decimal fields to numbers and Date to ISO string for JSON transport
   return {
-    id: purchase.id,
-    storeName: purchase.storeName,
-    totalValue: Number(purchase.totalValue),
-    boughtAt, // Use the variable we set (always has a value)
-    productCount: purchase.products.length,
+    purchase: {
+      ...purchase,
+      totalValue: purchase.totalValue ? Number(purchase.totalValue) : null,
+      boughtAt: purchase.boughtAt ? purchase.boughtAt.toISOString() : null,
+      products: purchase.products.map((p) => ({
+        ...p,
+        unitValue: p.unitValue ? Number(p.unitValue) : null,
+        quantity: p.quantity ? Number(p.quantity) : null,
+        totalValue: p.totalValue ? Number(p.totalValue) : null,
+      })),
+    },
   };
 }
