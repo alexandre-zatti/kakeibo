@@ -8,14 +8,18 @@ export interface SerializedProduct extends Omit<Product, "unitValue" | "quantity
 }
 
 // Purchase with product count (for list views)
-export interface PurchaseWithCount extends Omit<Purchase, "totalValue"> {
+// boughtAt is serialized to ISO string for JSON transport
+export interface PurchaseWithCount extends Omit<Purchase, "totalValue" | "boughtAt"> {
   totalValue: number | null;
+  boughtAt: string | null;
   _count: { products: number };
 }
 
 // Purchase with full products array (for detail view)
-export interface PurchaseWithProducts extends Omit<Purchase, "totalValue"> {
+// boughtAt is serialized to ISO string for JSON transport
+export interface PurchaseWithProducts extends Omit<Purchase, "totalValue" | "boughtAt"> {
   totalValue: number | null;
+  boughtAt: string | null;
   products: SerializedProduct[];
 }
 
@@ -62,3 +66,13 @@ export interface PurchaseListResponse {
 }
 
 export interface PurchaseDetailResponse extends PurchaseWithProducts {}
+
+// Product input type for forms (all fields optional for partial updates)
+export interface ProductFormData {
+  code?: string | null;
+  description: string;
+  unitValue?: number | null;
+  unitIdentifier?: string | null;
+  quantity?: number | null;
+  totalValue: number;
+}
