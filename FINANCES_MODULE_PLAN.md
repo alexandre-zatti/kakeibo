@@ -12,17 +12,17 @@
 
 | Phase | Description | Status | Session Notes |
 |-------|-------------|--------|---------------|
-| 1a | Database Schema + Migration | `DOING` | Branch: feature/finances-phase-1a |
-| 1b | Types + Zod Schemas | `PENDING` | |
-| 1c | Services | `PENDING` | |
-| 1d | Server Actions | `PENDING` | |
-| 1e | Navigation + Middleware + Household UI | `PENDING` | |
-| 1f | Monthly Budget Page + Components | `PENDING` | |
-| 1g | Caixinhas Pages + Components | `PENDING` | |
-| 1h | Recurring Expenses Page + Components | `PENDING` | |
-| 1i | Month Closing Flow | `PENDING` | |
-| 1j | Dashboard Integration | `PENDING` | |
-| 1k | Categories Management Page | `PENDING` | |
+| 1a | Database Schema + Migration | `DONE` | Branch: feature/finances-phase-1a |
+| 1b | Types + Zod Schemas | `DONE` | |
+| 1c | Services | `DONE` | |
+| 1d | Server Actions | `DONE` | |
+| 1e | Navigation + Middleware + Household UI | `DONE` | |
+| 1f | Monthly Budget Page + Components | `DONE` | |
+| 1g | Caixinhas Pages + Components | `DONE` | |
+| 1h | Recurring Expenses Page + Components | `DONE` | |
+| 1i | Month Closing Flow | `DONE` | |
+| 1j | Dashboard Integration | `DONE` | |
+| 1k | Categories Management Page | `DONE` | |
 | 1.5 | Data Migration (Google Sheets) | `PENDING` | |
 | 2 | Adapters (Gmail + Drive) | `PENDING` | Future |
 
