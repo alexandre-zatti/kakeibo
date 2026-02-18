@@ -55,9 +55,10 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  accounts  Account[]
-  sessions  Session[]
-  purchases Purchase[]
+  accounts         Account[]
+  sessions         Session[]
+  purchases        Purchase[]
+  householdMembers HouseholdMember[]
 
   @@map("user")
   @@schema("kakeibo")
@@ -109,5 +110,174 @@ model Verification {
 
   @@unique([identifier, value])
   @@map("verification")
+  @@schema("kakeibo")
+}
+
+// =============================================================================
+// Finances Module
+// =============================================================================
+
+model Household {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  name      String   @db.VarChar(255)
+
+  members           HouseholdMember[]
+  categories        Category[]
+  monthlyBudgets    MonthlyBudget[]
+  savingsBoxes      SavingsBox[]
+  recurringExpenses RecurringExpense[]
+
+  @@map("household")
+  @@schema("kakeibo")
+}
+
+model HouseholdMember {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now()) @map("created_at")
+  householdId Int      @map("household_id")
+  userId      String   @map("user_id")
+  role        String   @default("owner") @db.VarChar(50)
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([householdId, userId])
+  @@map("household_member")
+  @@schema("kakeibo")
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  name        String   @db.VarChar(255)
+  type        String   @db.VarChar(20) // "income" | "expense"
+  icon        String?  @db.VarChar(50)
+  color       String?  @db.VarChar(7)
+  sortOrder   Int      @default(0) @map("sort_order")
+  householdId Int      @map("household_id")
+
+  household         Household          @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  incomeEntries     IncomeEntry[]
+  expenseEntries    ExpenseEntry[]
+  recurringExpenses RecurringExpense[]
+
+  @@unique([householdId, name, type])
+  @@map("category")
+  @@schema("kakeibo")
+}
+
+model MonthlyBudget {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  year        Int
+  month       Int
+  status      String    @default("open") @db.VarChar(20) // "open" | "closed"
+  closedAt    DateTime? @map("closed_at")
+  bankBalance Decimal?  @map("bank_balance") @db.Decimal(10, 2)
+  householdId Int       @map("household_id")
+
+  household      Household      @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  incomeEntries  IncomeEntry[]
+  expenseEntries ExpenseEntry[]
+
+  @@unique([householdId, year, month])
+  @@map("monthly_budget")
+  @@schema("kakeibo")
+}
+
+model IncomeEntry {
+  id              Int      @id @default(autoincrement())
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  description     String   @db.VarChar(255)
+  amount          Decimal  @db.Decimal(10, 2)
+  categoryId      Int      @map("category_id")
+  monthlyBudgetId Int      @map("monthly_budget_id")
+
+  category      Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  monthlyBudget MonthlyBudget @relation(fields: [monthlyBudgetId], references: [id], onDelete: Cascade)
+
+  @@map("income_entry")
+  @@schema("kakeibo")
+}
+
+model ExpenseEntry {
+  id                 Int       @id @default(autoincrement())
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  description        String    @db.VarChar(255)
+  amount             Decimal   @db.Decimal(10, 2)
+  categoryId         Int       @map("category_id")
+  monthlyBudgetId    Int       @map("monthly_budget_id")
+  isPaid             Boolean   @default(false) @map("is_paid")
+  paidAt             DateTime? @map("paid_at")
+  source             String    @default("manual") @db.VarChar(20) // "manual" | "draft" | "auto" | "recurring"
+  savingsBoxId       Int?      @map("savings_box_id")
+  recurringExpenseId Int?      @map("recurring_expense_id")
+
+  category         Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  monthlyBudget    MonthlyBudget     @relation(fields: [monthlyBudgetId], references: [id], onDelete: Cascade)
+  savingsBox       SavingsBox?       @relation(fields: [savingsBoxId], references: [id], onDelete: SetNull)
+  recurringExpense RecurringExpense? @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
+
+  @@map("expense_entry")
+  @@schema("kakeibo")
+}
+
+model RecurringExpense {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  description String   @db.VarChar(255)
+  amount      Decimal  @db.Decimal(10, 2)
+  categoryId  Int      @map("category_id")
+  householdId Int      @map("household_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  dayOfMonth  Int?     @map("day_of_month")
+
+  category          Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  household         Household      @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  generatedExpenses ExpenseEntry[]
+
+  @@map("recurring_expense")
+  @@schema("kakeibo")
+}
+
+model SavingsBox {
+  id            Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  name          String   @db.VarChar(255)
+  balance       Decimal  @default(0) @db.Decimal(10, 2)
+  monthlyTarget Decimal? @map("monthly_target") @db.Decimal(10, 2)
+  goalAmount    Decimal? @map("goal_amount") @db.Decimal(10, 2)
+  icon          String?  @db.VarChar(50)
+  color         String?  @db.VarChar(7)
+  householdId   Int      @map("household_id")
+
+  household      Household            @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  transactions   SavingsTransaction[]
+  linkedExpenses ExpenseEntry[]
+
+  @@map("savings_box")
+  @@schema("kakeibo")
+}
+
+model SavingsTransaction {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now()) @map("created_at")
+  type         String   @db.VarChar(20) // "contribution" | "withdrawal"
+  amount       Decimal  @db.Decimal(10, 2)
+  description  String?  @db.VarChar(255)
+  savingsBoxId Int      @map("savings_box_id")
+  source       String   @default("manual") @db.VarChar(20) // "manual" | "closing" | "expense_link"
+
+  savingsBox SavingsBox @relation(fields: [savingsBoxId], references: [id], onDelete: Cascade)
+
+  @@map("savings_transaction")
   @@schema("kakeibo")
 }
