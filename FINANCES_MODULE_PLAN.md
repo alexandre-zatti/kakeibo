@@ -23,7 +23,7 @@
 | 1i | Month Closing Flow | `DONE` | |
 | 1j | Dashboard Integration | `DONE` | |
 | 1k | Categories Management Page | `DONE` | |
-| 1.5 | Data Migration (Google Sheets) | `PENDING` | |
+| 1.5 | Data Migration (Google Sheets) | `DONE` | 33 months, 393 expenses, 4 caixinhas migrated |
 | 2 | Adapters (Gmail + Drive) | `PENDING` | Future |
 
 ### Dependency Graph
