@@ -76,7 +76,7 @@ export const createExpenseSchema = z.object({
   amount: z.number().positive("Valor deve ser positivo"),
   categoryId: z.number().int().positive("Categoria é obrigatória"),
   isPaid: z.boolean().default(false),
-  source: z.enum(["manual", "draft", "auto", "recurring"]).default("manual"),
+  source: z.enum(["manual", "draft", "auto", "recurring", "adapter"]).default("manual"),
   savingsBoxId: z.number().int().positive().optional().nullable(),
   recurringExpenseId: z.number().int().positive().optional().nullable(),
 });
@@ -193,3 +193,25 @@ export const monthParamsSchema = z.object({
 });
 
 export type MonthParams = z.infer<typeof monthParamsSchema>;
+
+// =============================================================================
+// Adapter
+// =============================================================================
+
+export const createAdapterSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório").max(255, "Nome muito longo"),
+  description: z.string().max(1000, "Descrição muito longa").optional().nullable(),
+  moduleKey: z.string().min(1, "Módulo é obrigatório").max(100),
+  isActive: z.boolean().default(true),
+});
+
+export type CreateAdapterInput = z.infer<typeof createAdapterSchema>;
+
+export const updateAdapterSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório").max(255).optional(),
+  description: z.string().max(1000).optional().nullable(),
+  moduleKey: z.string().min(1).max(100).optional(),
+  isActive: z.boolean().optional(),
+});
+
+export type UpdateAdapterInput = z.infer<typeof updateAdapterSchema>;
