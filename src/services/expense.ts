@@ -15,7 +15,7 @@ function serializeExpense(entry: {
 export async function createExpense(
   budgetId: number,
   householdId: number,
-  data: CreateExpenseInput
+  data: CreateExpenseInput & { attachmentPath?: string | null }
 ): Promise<SerializedExpenseEntry | null> {
   log.debug({ budgetId, householdId }, "Creating expense entry");
 
@@ -37,6 +37,7 @@ export async function createExpense(
         source: data.source,
         savingsBoxId: data.savingsBoxId ?? null,
         recurringExpenseId: data.recurringExpenseId ?? null,
+        attachmentPath: data.attachmentPath ?? null,
       },
     });
 
