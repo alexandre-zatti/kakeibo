@@ -10,6 +10,7 @@ import { IncomeSection } from "@/components/finances/income-section";
 import { ExpenseList } from "@/components/finances/expense-list";
 import { MonthClosingButton } from "@/components/finances/month-closing-button";
 import { PopulateRecurringButton } from "@/components/finances/populate-recurring-button";
+import { RunAdaptersButton } from "@/components/adapters/run-adapters-button";
 
 interface FinancesPageProps {
   searchParams: Promise<{ year?: string; month?: string }>;
@@ -42,6 +43,7 @@ export default async function FinancesPage({ searchParams }: FinancesPageProps) 
       <MonthNavigator year={year} month={month} status={budget.status} />
       <div className="flex flex-wrap items-center gap-2">
         <PopulateRecurringButton budgetId={budget.id} isClosed={isClosed} />
+        <RunAdaptersButton budgetId={budget.id} disabled={isClosed} />
         <MonthClosingButton budget={budget} savingsBoxes={savingsBoxes} />
       </div>
       <BudgetSummaryBar summary={budget} />
