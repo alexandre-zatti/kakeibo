@@ -33,7 +33,12 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protect dashboard and groceries routes - redirect unauthenticated users to login
-  if (!sessionCookie && (pathname.startsWith("/dashboard") || pathname.startsWith("/groceries"))) {
+  if (
+    !sessionCookie &&
+    (pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/groceries") ||
+      pathname.startsWith("/finances"))
+  ) {
     return addCorrelationHeader(
       NextResponse.redirect(new URL("/login", request.url)),
       correlationId
@@ -62,5 +67,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/login", "/signup", "/dashboard/:path*", "/groceries/:path*"],
+  matcher: ["/", "/login", "/signup", "/dashboard/:path*", "/groceries/:path*", "/finances/:path*"],
 };

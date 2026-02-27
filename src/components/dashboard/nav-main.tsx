@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, List, ScanLine, ShoppingCart } from "lucide-react";
+import {
+  CalendarCheck,
+  ChevronRight,
+  List,
+  PiggyBank,
+  Repeat,
+  ScanLine,
+  ShoppingCart,
+  Tags,
+  Wallet,
+} from "lucide-react";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -17,6 +27,33 @@ import {
 } from "@/components/ui/sidebar";
 
 const items = [
+  {
+    title: "Finances",
+    url: "/finances",
+    icon: Wallet,
+    items: [
+      {
+        title: "Monthly Budget",
+        url: "/finances",
+        icon: CalendarCheck,
+      },
+      {
+        title: "Caixinhas",
+        url: "/finances/caixinhas",
+        icon: PiggyBank,
+      },
+      {
+        title: "Recurring",
+        url: "/finances/recurring",
+        icon: Repeat,
+      },
+      {
+        title: "Categories",
+        url: "/finances/categories",
+        icon: Tags,
+      },
+    ],
+  },
   {
     title: "Groceries",
     url: "/groceries",
