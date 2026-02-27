@@ -9,6 +9,7 @@ import {
   deleteAdapter,
   toggleAdapterActive,
 } from "@/services/adapter";
+import { prisma } from "@/lib/prisma";
 import logger, { serializeError } from "@/lib/logger";
 import type { SerializedAdapter } from "@/types/finances";
 
@@ -86,5 +87,22 @@ export async function toggleAdapterActiveAction(
   } catch (error) {
     log.error({ error: serializeError(error) }, "Failed to toggle adapter");
     return { success: false, error: "Erro ao alterar status do adaptador" };
+  }
+}
+
+export async function disconnectGoogleAction(): Promise<ActionResult> {
+  try {
+    const ctx = await resolveSessionAndHousehold();
+    if ("error" in ctx) return { success: false, error: ctx.error };
+
+    await prisma.googleConnection.delete({
+      where: { householdId: ctx.householdId },
+    });
+
+    revalidatePath("/finances/adapters");
+    return { success: true };
+  } catch (error) {
+    log.error({ error: serializeError(error) }, "Failed to disconnect Google");
+    return { success: false, error: "Erro ao desconectar Google" };
   }
 }

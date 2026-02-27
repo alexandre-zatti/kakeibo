@@ -130,6 +130,7 @@ model Household {
   recurringExpenses RecurringExpense[]
   adapters          Adapter[]
   adapterRuns       AdapterRun[]
+  googleConnection  GoogleConnection?
 
   @@map("household")
   @@schema("kakeibo")
@@ -285,6 +286,27 @@ model SavingsTransaction {
   savingsBox SavingsBox @relation(fields: [savingsBoxId], references: [id], onDelete: Cascade)
 
   @@map("savings_transaction")
+  @@schema("kakeibo")
+}
+
+// =============================================================================
+// Google OAuth Connection
+// =============================================================================
+
+model GoogleConnection {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  email        String   @db.VarChar(255)
+  accessToken  String   @map("access_token") @db.Text
+  refreshToken String   @map("refresh_token") @db.Text
+  expiresAt    DateTime @map("expires_at")
+  scopes       String   @db.Text
+  householdId  Int      @unique @map("household_id")
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@map("google_connection")
   @@schema("kakeibo")
 }
 
