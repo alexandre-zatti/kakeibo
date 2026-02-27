@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Local plans and design docs
 /docs/
+
+# Adapter file uploads
+data/
