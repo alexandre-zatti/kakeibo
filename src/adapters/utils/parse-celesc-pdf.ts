@@ -1,4 +1,4 @@
-import pdfParse from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 import logger from "@/lib/logger";
 
 const log = logger.child({ module: "adapters/utils/parse-celesc-pdf" });
@@ -48,17 +48,23 @@ export function extractAmountFromText(text: string): number | null {
  * Returns the amount in BRL as a number, or null if not found.
  */
 export async function parseCelescPdf(pdfBuffer: Buffer): Promise<number | null> {
-  const data = await pdfParse(pdfBuffer);
+  const parser = new PDFParse({ data: pdfBuffer });
 
-  log.debug({ textLength: data.text.length, numpages: data.numpages }, "PDF parsed");
+  try {
+    const result = await parser.getText();
 
-  const amount = extractAmountFromText(data.text);
+    log.debug({ textLength: result.text.length, pages: result.total }, "PDF parsed");
 
-  if (amount === null) {
-    log.warn("Could not extract amount from Celesc PDF");
-  } else {
-    log.info({ amount }, "Extracted amount from Celesc PDF");
+    const amount = extractAmountFromText(result.text);
+
+    if (amount === null) {
+      log.warn("Could not extract amount from Celesc PDF");
+    } else {
+      log.info({ amount }, "Extracted amount from Celesc PDF");
+    }
+
+    return amount;
+  } finally {
+    await parser.destroy();
   }
-
-  return amount;
 }
