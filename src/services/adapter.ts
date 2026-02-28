@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import logger from "@/lib/logger";
 import type { SerializedAdapter, AdapterWithLastRun } from "@/types/finances";
 
@@ -35,13 +36,20 @@ export async function getAdapterById(
 
 export async function createAdapter(
   householdId: number,
-  data: { name: string; description?: string | null; moduleKey: string; isActive?: boolean }
+  data: {
+    name: string;
+    description?: string | null;
+    moduleKey: string;
+    config?: Prisma.InputJsonValue;
+    isActive?: boolean;
+  }
 ): Promise<SerializedAdapter> {
   const adapter = await prisma.adapter.create({
     data: {
       name: data.name,
       description: data.description ?? null,
       moduleKey: data.moduleKey,
+      config: data.config ?? {},
       isActive: data.isActive ?? true,
       householdId,
     },
@@ -54,7 +62,13 @@ export async function createAdapter(
 export async function updateAdapter(
   id: number,
   householdId: number,
-  data: { name?: string; description?: string | null; moduleKey?: string; isActive?: boolean }
+  data: {
+    name?: string;
+    description?: string | null;
+    moduleKey?: string;
+    config?: Prisma.InputJsonValue;
+    isActive?: boolean;
+  }
 ): Promise<SerializedAdapter | null> {
   const existing = await prisma.adapter.findFirst({
     where: { id, householdId },
@@ -68,6 +82,7 @@ export async function updateAdapter(
       ...(data.name !== undefined && { name: data.name }),
       ...(data.description !== undefined && { description: data.description ?? null }),
       ...(data.moduleKey !== undefined && { moduleKey: data.moduleKey }),
+      ...(data.config !== undefined && { config: data.config }),
       ...(data.isActive !== undefined && { isActive: data.isActive }),
     },
   });

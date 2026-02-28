@@ -202,6 +202,7 @@ export const createAdapterSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(255, "Nome muito longo"),
   description: z.string().max(1000, "Descrição muito longa").optional().nullable(),
   moduleKey: z.string().min(1, "Módulo é obrigatório").max(100),
+  config: z.record(z.string(), z.unknown()).default({}),
   isActive: z.boolean().default(true),
 });
 
@@ -211,6 +212,7 @@ export const updateAdapterSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(255).optional(),
   description: z.string().max(1000).optional().nullable(),
   moduleKey: z.string().min(1).max(100).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
   isActive: z.boolean().optional(),
 });
 

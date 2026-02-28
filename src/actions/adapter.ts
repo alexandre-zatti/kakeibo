@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { Prisma } from "@prisma/client";
 import { resolveSessionAndHousehold, type ActionResult } from "@/actions/_helpers";
 import { createAdapterSchema, updateAdapterSchema } from "@/lib/schemas/finances";
 import {
@@ -23,7 +24,10 @@ export async function createAdapterAction(data: unknown): Promise<ActionResult<S
     const parsed = createAdapterSchema.safeParse(data);
     if (!parsed.success) return { success: false, error: "Dados inválidos" };
 
-    const adapter = await createAdapter(ctx.householdId, parsed.data);
+    const adapter = await createAdapter(ctx.householdId, {
+      ...parsed.data,
+      config: parsed.data.config as Prisma.InputJsonValue,
+    });
 
     revalidatePath("/finances/adapters");
     return { success: true, data: adapter };
@@ -44,7 +48,10 @@ export async function updateAdapterAction(
     const parsed = updateAdapterSchema.safeParse(data);
     if (!parsed.success) return { success: false, error: "Dados inválidos" };
 
-    const adapter = await updateAdapter(id, ctx.householdId, parsed.data);
+    const adapter = await updateAdapter(id, ctx.householdId, {
+      ...parsed.data,
+      config: parsed.data.config as Prisma.InputJsonValue | undefined,
+    });
     if (!adapter) return { success: false, error: "Adaptador não encontrado" };
 
     revalidatePath("/finances/adapters");
