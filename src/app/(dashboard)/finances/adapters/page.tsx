@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { getHouseholdByUserId } from "@/services/household";
 import { getAdapters } from "@/services/adapter";
 import { getAdapterRuns } from "@/services/adapter-run";
+import { getCategoriesByHousehold } from "@/services/category";
 import { getAvailableModules } from "@/adapters/modules";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -17,10 +18,11 @@ export default async function AdaptersPage() {
   const household = await getHouseholdByUserId(session.user.id);
   if (!household) redirect("/finances");
 
-  const [adapters, runs, googleConnection] = await Promise.all([
+  const [adapters, runs, googleConnection, categories] = await Promise.all([
     getAdapters(household.id),
     getAdapterRuns(household.id),
     prisma.googleConnection.findUnique({ where: { householdId: household.id } }),
+    getCategoriesByHousehold(household.id, "expense"),
   ]);
 
   const availableModules = getAvailableModules();
@@ -33,7 +35,12 @@ export default async function AdaptersPage() {
       <Suspense>
         <GoogleConnectionCard email={googleConnection?.email ?? null} />
       </Suspense>
-      <AdapterList adapters={adapters} runs={runs} availableModules={availableModules} />
+      <AdapterList
+        adapters={adapters}
+        runs={runs}
+        availableModules={availableModules}
+        categories={categories}
+      />
     </div>
   );
 }

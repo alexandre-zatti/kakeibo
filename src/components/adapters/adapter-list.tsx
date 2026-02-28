@@ -14,6 +14,7 @@ import type {
   AdapterRunWithLogs,
   SerializedAdapter,
   SerializedAdapterRunLog,
+  SerializedCategory,
 } from "@/types/finances";
 import { AdapterFormSheet } from "./adapter-form-sheet";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ interface AdapterListProps {
   adapters: AdapterWithLastRun[];
   runs: AdapterRunWithLogs[];
   availableModules: { key: string; label: string; description: string }[];
+  categories: SerializedCategory[];
 }
 
 function getModuleLabel(
@@ -73,7 +75,7 @@ function formatDate(date: Date | string): string {
   });
 }
 
-export function AdapterList({ adapters, runs, availableModules }: AdapterListProps) {
+export function AdapterList({ adapters, runs, availableModules, categories }: AdapterListProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [editAdapter, setEditAdapter] = useState<SerializedAdapter | null>(null);
   const [expandedRuns, setExpandedRuns] = useState<Set<number>>(new Set());
@@ -193,6 +195,7 @@ export function AdapterList({ adapters, runs, availableModules }: AdapterListPro
         }}
         availableModules={availableModules}
         adapter={editAdapter}
+        categories={categories}
       />
     </div>
   );

@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { createAdapterAction, updateAdapterAction } from "@/actions/adapter";
 import { createAdapterSchema, updateAdapterSchema } from "@/lib/schemas/finances";
-import type { SerializedAdapter } from "@/types/finances";
+import type { SerializedAdapter, SerializedCategory } from "@/types/finances";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -31,6 +31,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(255, "Nome muito longo"),
   description: z.string().max(1000, "Descrição muito longa").optional().nullable(),
   moduleKey: z.string().min(1, "Módulo é obrigatório"),
+  categoryId: z.string().optional(),
 });
 
 type AdapterFormValues = z.infer<typeof formSchema>;
@@ -40,6 +41,7 @@ interface AdapterFormSheetProps {
   onOpenChange: (open: boolean) => void;
   availableModules: { key: string; label: string; description: string }[];
   adapter?: SerializedAdapter | null;
+  categories: SerializedCategory[];
 }
 
 export function AdapterFormSheet({
@@ -47,8 +49,10 @@ export function AdapterFormSheet({
   onOpenChange,
   availableModules,
   adapter,
+  categories,
 }: AdapterFormSheetProps) {
   const isEditing = !!adapter;
+  const adapterConfig = (adapter?.config ?? {}) as Record<string, unknown>;
 
   const form = useForm<AdapterFormValues>({
     resolver: zodResolver(formSchema),
@@ -56,28 +60,40 @@ export function AdapterFormSheet({
       name: adapter?.name ?? "",
       description: adapter?.description ?? "",
       moduleKey: adapter?.moduleKey ?? "",
+      categoryId: adapterConfig.categoryId ? String(adapterConfig.categoryId) : "",
     },
   });
 
   useEffect(() => {
     if (open) {
+      const config = (adapter?.config ?? {}) as Record<string, unknown>;
       form.reset({
         name: adapter?.name ?? "",
         description: adapter?.description ?? "",
         moduleKey: adapter?.moduleKey ?? "",
+        categoryId: config.categoryId ? String(config.categoryId) : "",
       });
     }
   }, [open, adapter, form]);
 
   async function onSubmit(data: AdapterFormValues) {
+    const config: Record<string, unknown> = {};
+    if (data.categoryId) {
+      config.categoryId = parseInt(data.categoryId, 10);
+    }
+
     const payload = {
       ...data,
       description: data.description || null,
+      config,
     };
 
+    // Remove categoryId from payload since it's now in config
+    const { categoryId: _, ...payloadWithoutCategoryId } = payload;
+
     const result = isEditing
-      ? await updateAdapterAction(adapter!.id, updateAdapterSchema.parse(payload))
-      : await createAdapterAction(createAdapterSchema.parse(payload));
+      ? await updateAdapterAction(adapter!.id, updateAdapterSchema.parse(payloadWithoutCategoryId))
+      : await createAdapterAction(createAdapterSchema.parse(payloadWithoutCategoryId));
 
     if (!result.success) {
       toast.error(result.error);
@@ -144,6 +160,27 @@ export function AdapterFormSheet({
               <p className="text-sm text-destructive">{form.formState.errors.moduleKey.message}</p>
             )}
           </div>
+
+          {form.watch("moduleKey") && form.watch("moduleKey") !== "echo-test" && (
+            <div className="space-y-2">
+              <Label>Categoria da despesa</Label>
+              <Select
+                value={form.watch("categoryId") || ""}
+                onValueChange={(v) => form.setValue("categoryId", v, { shouldValidate: true })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a categoria..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={String(cat.id)}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <SheetFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
