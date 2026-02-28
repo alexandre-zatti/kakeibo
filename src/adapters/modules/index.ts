@@ -1,8 +1,10 @@
 import type { AdapterModule } from "../types";
+import { celescFatura } from "./celesc-fatura";
 import { echoTest } from "./echo-test";
 
 export const adapterModules: Record<string, AdapterModule> = {
   "echo-test": echoTest,
+  "celesc-fatura": celescFatura,
 };
 
 export function getAdapterModule(key: string): AdapterModule | undefined {
