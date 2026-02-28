@@ -321,6 +321,7 @@ model Adapter {
   name        String   @db.VarChar(255)
   description String?  @db.Text
   moduleKey   String   @map("module_key") @db.VarChar(100)
+  config      Json     @default("{}") @db.JsonB
   isActive    Boolean  @default(true) @map("is_active")
   householdId Int      @map("household_id")
 
