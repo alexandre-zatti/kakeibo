@@ -1,7 +1,7 @@
 import { extractText } from "unpdf";
 import logger from "@/lib/logger";
 
-const log = logger.child({ module: "adapters/utils/parse-celesc-pdf" });
+const log = logger.child({ module: "adapters/utils/parse-boleto-pdf" });
 
 /**
  * Parses a Brazilian monetary value string (e.g. "1.234,56") into a number (1234.56).
@@ -13,7 +13,7 @@ function parseBrazilianNumber(value: string): number | null {
 }
 
 /**
- * Extracts the bill amount from a Celesc electricity bill PDF.
+ * Extracts the bill amount from a Brazilian boleto/bill PDF text.
  * Tries multiple patterns common in Brazilian utility bills.
  */
 export function extractAmountFromText(text: string): number | null {
@@ -55,10 +55,10 @@ export function extractAmountFromText(text: string): number | null {
 }
 
 /**
- * Extracts the bill amount from a Celesc PDF buffer.
+ * Extracts the bill amount from a PDF boleto buffer.
  * Returns the amount in BRL as a number, or null if not found.
  */
-export async function parseCelescPdf(pdfBuffer: Buffer): Promise<number | null> {
+export async function parseBoleto(pdfBuffer: Buffer): Promise<number | null> {
   const { totalPages, text } = await extractText(new Uint8Array(pdfBuffer), { mergePages: true });
 
   log.debug({ textLength: text.length, pages: totalPages }, "PDF parsed");
@@ -67,9 +67,9 @@ export async function parseCelescPdf(pdfBuffer: Buffer): Promise<number | null> 
   const amount = extractAmountFromText(text);
 
   if (amount === null) {
-    log.warn({ fullText: text }, "Could not extract amount from Celesc PDF — dumping full text");
+    log.warn({ fullText: text }, "Could not extract amount from boleto PDF — dumping full text");
   } else {
-    log.info({ amount }, "Extracted amount from Celesc PDF");
+    log.info({ amount }, "Extracted amount from boleto PDF");
   }
 
   return amount;
