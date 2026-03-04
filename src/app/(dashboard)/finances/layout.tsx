@@ -4,7 +4,13 @@ import { getHouseholdByUserId } from "@/services/household";
 import { HouseholdProvider } from "@/components/finances/household-context";
 import { HouseholdSetup } from "@/components/finances/household-setup";
 
-export default async function FinancesLayout({ children }: { children: React.ReactNode }) {
+export default async function FinancesLayout({
+  children,
+  modal,
+}: {
+  children: React.ReactNode;
+  modal: React.ReactNode;
+}) {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user?.id) {
@@ -17,5 +23,10 @@ export default async function FinancesLayout({ children }: { children: React.Rea
     return <HouseholdSetup />;
   }
 
-  return <HouseholdProvider householdId={household.id}>{children}</HouseholdProvider>;
+  return (
+    <HouseholdProvider householdId={household.id}>
+      {children}
+      {modal}
+    </HouseholdProvider>
+  );
 }
