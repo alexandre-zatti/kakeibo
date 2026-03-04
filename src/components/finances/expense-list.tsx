@@ -17,6 +17,15 @@ import { toggleExpensePaidAction } from "@/actions/expense";
 import { ExpenseFormSheet } from "./expense-form-sheet";
 import { ExpenseDeleteDialog } from "./expense-delete-dialog";
 import { toast } from "sonner";
+import Link from "next/link";
+
+function getAttachmentLabel(path: string): string {
+  const ext = path.split(".").pop()?.toUpperCase();
+  if (ext === "PDF" || ext === "PNG" || ext === "JPG" || ext === "JPEG" || ext === "WEBP") {
+    return ext === "JPEG" ? "JPG" : ext;
+  }
+  return "Anexo";
+}
 
 interface ExpenseListProps {
   budgetId: number;
@@ -82,6 +91,13 @@ export function ExpenseList({
                   <Badge variant={sourceConfig.variant} className="shrink-0 text-xs">
                     {sourceConfig.label}
                   </Badge>
+                )}
+                {entry.attachmentPath && (
+                  <Link href={`/finances/attachment/${entry.id}`} className="shrink-0">
+                    <Badge variant="secondary" className="cursor-pointer text-xs">
+                      {getAttachmentLabel(entry.attachmentPath)}
+                    </Badge>
+                  </Link>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-1">

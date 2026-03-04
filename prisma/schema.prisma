@@ -128,6 +128,9 @@ model Household {
   monthlyBudgets    MonthlyBudget[]
   savingsBoxes      SavingsBox[]
   recurringExpenses RecurringExpense[]
+  adapters          Adapter[]
+  adapterRuns       AdapterRun[]
+  googleConnection  GoogleConnection?
 
   @@map("household")
   @@schema("kakeibo")
@@ -183,6 +186,7 @@ model MonthlyBudget {
   household      Household      @relation(fields: [householdId], references: [id], onDelete: Cascade)
   incomeEntries  IncomeEntry[]
   expenseEntries ExpenseEntry[]
+  adapterRuns    AdapterRun[]
 
   @@unique([householdId, year, month])
   @@map("monthly_budget")
@@ -219,10 +223,13 @@ model ExpenseEntry {
   savingsBoxId       Int?      @map("savings_box_id")
   recurringExpenseId Int?      @map("recurring_expense_id")
 
+  attachmentPath     String?          @map("attachment_path") @db.VarChar(500)
+
   category         Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   monthlyBudget    MonthlyBudget     @relation(fields: [monthlyBudgetId], references: [id], onDelete: Cascade)
   savingsBox       SavingsBox?       @relation(fields: [savingsBoxId], references: [id], onDelete: SetNull)
   recurringExpense RecurringExpense? @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
+  adapterRunLogs   AdapterRunLog[]
 
   @@map("expense_entry")
   @@schema("kakeibo")
@@ -279,5 +286,86 @@ model SavingsTransaction {
   savingsBox SavingsBox @relation(fields: [savingsBoxId], references: [id], onDelete: Cascade)
 
   @@map("savings_transaction")
+  @@schema("kakeibo")
+}
+
+// =============================================================================
+// Google OAuth Connection
+// =============================================================================
+
+model GoogleConnection {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  email        String   @db.VarChar(255)
+  accessToken  String   @map("access_token") @db.Text
+  refreshToken String   @map("refresh_token") @db.Text
+  expiresAt    DateTime @map("expires_at")
+  scopes       String   @db.Text
+  householdId  Int      @unique @map("household_id")
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@map("google_connection")
+  @@schema("kakeibo")
+}
+
+// =============================================================================
+// Finance Adapters
+// =============================================================================
+
+model Adapter {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  moduleKey   String   @map("module_key") @db.VarChar(100)
+  config      Json     @default("{}") @db.JsonB
+  isActive    Boolean  @default(true) @map("is_active")
+  householdId Int      @map("household_id")
+
+  household Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  runLogs   AdapterRunLog[]
+
+  @@unique([householdId, name])
+  @@map("adapter")
+  @@schema("kakeibo")
+}
+
+model AdapterRun {
+  id              Int       @id @default(autoincrement())
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  status          String    @default("running") @db.VarChar(20)
+  completedAt     DateTime? @map("completed_at")
+  householdId     Int       @map("household_id")
+  monthlyBudgetId Int       @map("monthly_budget_id")
+
+  household     Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  monthlyBudget MonthlyBudget   @relation(fields: [monthlyBudgetId], references: [id], onDelete: Cascade)
+  logs          AdapterRunLog[]
+
+  @@map("adapter_run")
+  @@schema("kakeibo")
+}
+
+model AdapterRunLog {
+  id             Int       @id @default(autoincrement())
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  status         String    @default("pending") @db.VarChar(20)
+  errorMessage   String?   @map("error_message") @db.Text
+  attachmentPath String?   @map("attachment_path") @db.VarChar(500)
+  completedAt    DateTime? @map("completed_at")
+  adapterRunId   Int       @map("adapter_run_id")
+  adapterId      Int       @map("adapter_id")
+  expenseEntryId Int?      @map("expense_entry_id")
+
+  adapterRun   AdapterRun    @relation(fields: [adapterRunId], references: [id], onDelete: Cascade)
+  adapter      Adapter       @relation(fields: [adapterId], references: [id], onDelete: Cascade)
+  expenseEntry ExpenseEntry? @relation(fields: [expenseEntryId], references: [id], onDelete: SetNull)
+
+  @@map("adapter_run_log")
   @@schema("kakeibo")
 }

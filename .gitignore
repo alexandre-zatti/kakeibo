@@ -3,6 +3,8 @@
 # IDE
 .idea
 .claude
+.agents/
+skills-lock.json
 
 # dependencies
 /node_modules
@@ -39,3 +41,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local plans and design docs
+/docs/
+
+# Adapter file uploads
+data/

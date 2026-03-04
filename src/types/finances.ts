@@ -1,4 +1,7 @@
 import type {
+  Adapter,
+  AdapterRun,
+  AdapterRunLog,
   Category,
   ExpenseEntry,
   Household,
@@ -28,6 +31,7 @@ export const ExpenseSource = {
   DRAFT: "draft",
   AUTO: "auto",
   RECURRING: "recurring",
+  ADAPTER: "adapter",
 } as const;
 
 export type ExpenseSourceType = (typeof ExpenseSource)[keyof typeof ExpenseSource];
@@ -40,6 +44,7 @@ export const ExpenseSourceConfig: Record<
   [ExpenseSource.DRAFT]: { label: "Rascunho", variant: "secondary" },
   [ExpenseSource.AUTO]: { label: "Auto", variant: "outline" },
   [ExpenseSource.RECURRING]: { label: "Recorrente", variant: "outline" },
+  [ExpenseSource.ADAPTER]: { label: "Adaptador", variant: "outline" },
 };
 
 export const CategoryType = {
@@ -72,6 +77,26 @@ export const HouseholdRole = {
 } as const;
 
 export type HouseholdRoleType = (typeof HouseholdRole)[keyof typeof HouseholdRole];
+
+export const AdapterRunStatus = {
+  RUNNING: "running",
+  COMPLETED: "completed",
+  FAILED: "failed",
+  PARTIAL: "partial",
+} as const;
+
+export type AdapterRunStatusType = (typeof AdapterRunStatus)[keyof typeof AdapterRunStatus];
+
+export const AdapterRunLogStatus = {
+  PENDING: "pending",
+  RUNNING: "running",
+  SUCCESS: "success",
+  ERROR: "error",
+  SKIPPED: "skipped",
+} as const;
+
+export type AdapterRunLogStatusType =
+  (typeof AdapterRunLogStatus)[keyof typeof AdapterRunLogStatus];
 
 // =============================================================================
 // Serialized Types (Decimal -> number for JSON transport)
@@ -107,6 +132,22 @@ export interface SerializedSavingsTransaction extends Omit<SavingsTransaction, "
 export interface SerializedMonthlyBudget extends Omit<MonthlyBudget, "bankBalance"> {
   bankBalance: number | null;
 }
+
+export type SerializedAdapter = Adapter;
+
+export type SerializedAdapterRun = AdapterRun;
+
+export type SerializedAdapterRunLog = AdapterRunLog & {
+  adapter: SerializedAdapter;
+};
+
+export type AdapterRunWithLogs = SerializedAdapterRun & {
+  logs: SerializedAdapterRunLog[];
+};
+
+export type AdapterWithLastRun = SerializedAdapter & {
+  lastRunLog?: SerializedAdapterRunLog | null;
+};
 
 // =============================================================================
 // Composite Types
