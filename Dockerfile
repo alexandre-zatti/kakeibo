@@ -46,7 +46,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_BETTER_AUTH_URL=${NEXT_PUBLIC_BETTER_AUTH_URL}
 
-# Build the application
+# Build the application (increase heap for type-checking phase)
+ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN pnpm build
 
 # Ensure public directory exists (may be empty)
