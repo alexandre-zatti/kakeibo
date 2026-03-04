@@ -74,8 +74,8 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Copy public assets
 COPY --from=builder /app/public ./public
 
-# Set correct permissions for prerender cache
-RUN mkdir -p .next && chown nextjs:nodejs .next
+# Set correct permissions for prerender cache and data uploads
+RUN mkdir -p .next data && chown nextjs:nodejs .next data
 
 # Copy standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
