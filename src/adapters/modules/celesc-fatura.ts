@@ -39,12 +39,15 @@ export const celescFatura: AdapterModule = {
 
     // Build Gmail search query for the budget month
     const { year, month } = context;
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
     const nextMonth = month === 12 ? 1 : month + 1;
     const nextYear = month === 12 ? year + 1 : year;
-    const monthStr = String(month).padStart(2, "0");
+    const prevMonthStr = String(prevMonth).padStart(2, "0");
     const nextMonthStr = String(nextMonth).padStart(2, "0");
 
-    const query = `from:${SENDER_EMAIL} after:${year}/${monthStr}/01 before:${nextYear}/${nextMonthStr}/01 has:attachment`;
+    // Search from the 1st of the prior month — bill usually arrives around the 28th
+    const query = `from:${SENDER_EMAIL} after:${prevYear}/${prevMonthStr}/01 before:${nextYear}/${nextMonthStr}/01 has:attachment`;
 
     log.info({ query, householdId: context.householdId }, "Searching Gmail for Celesc bill");
 
@@ -110,7 +113,7 @@ export const celescFatura: AdapterModule = {
     }
 
     const description = `Celesc - Fatura ${MONTH_NAMES[month - 1]}/${year}`;
-    const filename = pdfPart.filename || `celesc-fatura-${year}-${monthStr}.pdf`;
+    const filename = pdfPart.filename || `celesc-fatura-${year}-${String(month).padStart(2, "0")}.pdf`;
 
     log.info({ amount, description, messageId }, "Celesc bill processed successfully");
 
