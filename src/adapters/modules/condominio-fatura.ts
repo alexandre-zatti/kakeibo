@@ -25,14 +25,14 @@ export const condominioFatura: AdapterModule = {
 
     const { year, month } = context;
     const monthStr = String(month).padStart(2, "0");
-
-    // The email body contains "Fatura MM/YYYY" matching the budget month.
-    // Bill arrives on the 2nd of the next month, so we also search into month+1.
     const nextMonth = month === 12 ? 1 : month + 1;
     const nextYear = month === 12 ? year + 1 : year;
     const nextMonthStr = String(nextMonth).padStart(2, "0");
 
-    const query = `from:${SENDER_EMAIL} "Fatura ${monthStr}/${year}" after:${year}/${monthStr}/01 before:${nextYear}/${nextMonthStr}/10 has:attachment`;
+    // Bill arrives on the 2nd of the budget month (e.g., March bill arrives March 2).
+    // The email says "Fatura 02/2026" (prior month's competência) but we assign it
+    // to the month it arrives in, since that's when it's due and paid.
+    const query = `from:${SENDER_EMAIL} after:${year}/${monthStr}/01 before:${nextYear}/${nextMonthStr}/01 has:attachment`;
 
     let bill;
     try {
