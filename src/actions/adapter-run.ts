@@ -11,7 +11,6 @@ import { saveAttachment } from "@/adapters/file-storage";
 import { AdapterRunLogStatus, ExpenseSource } from "@/types/finances";
 import logger, { serializeError } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
-import type { AdapterRunWithLogs } from "@/types/finances";
 
 const log = logger.child({ module: "actions/adapter-run" });
 
@@ -45,9 +44,11 @@ export async function triggerAdapterRunAction(
     );
 
     // Fire and forget — run adapters asynchronously
-    executeAdapterRun(run, budgetId, ctx.householdId, budget.year, budget.month).then(() => {
-      revalidatePath("/finances");
-      revalidatePath("/finances/adapters");
+    // Note: revalidatePath cannot be called here because the request context
+    // will be gone by the time the async work completes. The client should
+    // poll or refresh to see updated results.
+    executeAdapterRun(run, budgetId, ctx.householdId, budget.year, budget.month).catch((error) => {
+      log.error({ error: serializeError(error), runId: run.id }, "Adapter run failed unexpectedly");
     });
 
     revalidatePath("/finances/adapters");
@@ -143,10 +144,9 @@ export async function retryAdapterLogAction(logId: number): Promise<ActionResult
           errorMessage: error instanceof Error ? error.message : "Erro inesperado no retry",
         });
       }
-
-      revalidatePath("/finances");
-      revalidatePath("/finances/adapters");
-    })();
+    })().catch((error) => {
+      log.error({ error: serializeError(error), logId }, "Retry background task failed");
+    });
 
     revalidatePath("/finances/adapters");
     return { success: true };
