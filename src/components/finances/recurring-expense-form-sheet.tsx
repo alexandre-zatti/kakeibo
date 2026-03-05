@@ -25,7 +25,11 @@ import {
   createRecurringExpenseAction,
   updateRecurringExpenseAction,
 } from "@/actions/recurring-expense";
-import type { SerializedRecurringExpense, SerializedCategory } from "@/types/finances";
+import type {
+  SerializedRecurringExpense,
+  SerializedCategory,
+  SerializedAdapter,
+} from "@/types/finances";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -34,12 +38,14 @@ const recurringFormSchema = z.object({
   amount: z.number().positive("Valor deve ser positivo"),
   categoryId: z.number().int().positive("Categoria e obrigatoria"),
   dayOfMonth: z.number().int().min(1).max(31).optional().nullable(),
+  adapterId: z.number().int().positive().optional().nullable(),
 });
 
 type RecurringFormValues = z.infer<typeof recurringFormSchema>;
 
 interface RecurringExpenseFormSheetProps {
   categories: SerializedCategory[];
+  adapters: SerializedAdapter[];
   entry?: SerializedRecurringExpense | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,6 +53,7 @@ interface RecurringExpenseFormSheetProps {
 
 export function RecurringExpenseFormSheet({
   categories,
+  adapters,
   entry,
   open,
   onOpenChange,
@@ -60,6 +67,7 @@ export function RecurringExpenseFormSheet({
       amount: entry?.amount ?? 0,
       categoryId: entry?.categoryId ?? 0,
       dayOfMonth: entry?.dayOfMonth ?? null,
+      adapterId: entry?.adapterId ?? null,
     },
   });
 
@@ -70,6 +78,7 @@ export function RecurringExpenseFormSheet({
         amount: entry?.amount ?? 0,
         categoryId: entry?.categoryId ?? 0,
         dayOfMonth: entry?.dayOfMonth ?? null,
+        adapterId: entry?.adapterId ?? null,
       });
     }
   }, [open, entry, form]);
@@ -163,6 +172,28 @@ export function RecurringExpenseFormSheet({
             {form.formState.errors.dayOfMonth && (
               <p className="text-sm text-destructive">{form.formState.errors.dayOfMonth.message}</p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Adaptador (opcional)</Label>
+            <Select
+              value={form.watch("adapterId")?.toString() || "none"}
+              onValueChange={(v) =>
+                form.setValue("adapterId", v === "none" ? null : parseInt(v, 10))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Nenhum" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhum</SelectItem>
+                {adapters.map((a) => (
+                  <SelectItem key={a.id} value={a.id.toString()}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <SheetFooter className="pt-4">

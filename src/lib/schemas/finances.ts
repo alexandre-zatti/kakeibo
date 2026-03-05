@@ -102,6 +102,7 @@ export const createRecurringExpenseSchema = z.object({
   amount: z.number().positive("Valor deve ser positivo"),
   categoryId: z.number().int().positive("Categoria é obrigatória"),
   dayOfMonth: z.number().int().min(1).max(31).optional().nullable(),
+  adapterId: z.number().int().positive().optional().nullable(),
 });
 
 export type CreateRecurringExpenseInput = z.infer<typeof createRecurringExpenseSchema>;
@@ -111,6 +112,7 @@ export const updateRecurringExpenseSchema = z.object({
   amount: z.number().positive("Valor deve ser positivo").optional(),
   categoryId: z.number().int().positive().optional(),
   dayOfMonth: z.number().int().min(1).max(31).optional().nullable(),
+  adapterId: z.number().int().positive().optional().nullable(),
 });
 
 export type UpdateRecurringExpenseInput = z.infer<typeof updateRecurringExpenseSchema>;

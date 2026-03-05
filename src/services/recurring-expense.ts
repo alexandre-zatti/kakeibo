@@ -20,7 +20,7 @@ export async function getRecurringExpenses(
   try {
     const expenses = await prisma.recurringExpense.findMany({
       where: { householdId },
-      include: { category: true },
+      include: { category: true, adapter: true },
       orderBy: [{ isActive: "desc" }, { description: "asc" }],
     });
 
@@ -42,6 +42,7 @@ export async function createRecurringExpense(
       data: {
         ...data,
         dayOfMonth: data.dayOfMonth ?? null,
+        adapterId: data.adapterId ?? null,
         householdId,
       },
     });
@@ -73,6 +74,7 @@ export async function updateRecurringExpense(
       data: {
         ...data,
         dayOfMonth: data.dayOfMonth === undefined ? undefined : (data.dayOfMonth ?? null),
+        adapterId: data.adapterId === undefined ? undefined : (data.adapterId ?? null),
       },
     });
 

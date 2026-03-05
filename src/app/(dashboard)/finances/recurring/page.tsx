@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { getHouseholdByUserId } from "@/services/household";
 import { getRecurringExpenses } from "@/services/recurring-expense";
 import { getCategoriesByHousehold } from "@/services/category";
+import { getAdapters } from "@/services/adapter";
 import { RecurringExpenseList } from "@/components/finances/recurring-expense-list";
 
 export default async function RecurringPage() {
@@ -12,9 +13,10 @@ export default async function RecurringPage() {
   const household = await getHouseholdByUserId(session.user.id);
   if (!household) return null;
 
-  const [expenses, categories] = await Promise.all([
+  const [expenses, categories, adapters] = await Promise.all([
     getRecurringExpenses(household.id),
     getCategoriesByHousehold(household.id, "expense"),
+    getAdapters(household.id),
   ]);
 
   return (
@@ -22,7 +24,7 @@ export default async function RecurringPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Despesas Recorrentes</h1>
       </div>
-      <RecurringExpenseList expenses={expenses} categories={categories} />
+      <RecurringExpenseList expenses={expenses} categories={categories} adapters={adapters} />
     </div>
   );
 }

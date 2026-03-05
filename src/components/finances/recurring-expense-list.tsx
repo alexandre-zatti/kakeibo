@@ -8,7 +8,11 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { toggleRecurringExpenseActiveAction } from "@/actions/recurring-expense";
-import type { SerializedRecurringExpense, SerializedCategory } from "@/types/finances";
+import type {
+  SerializedRecurringExpense,
+  SerializedCategory,
+  SerializedAdapter,
+} from "@/types/finances";
 import { RecurringExpenseFormSheet } from "./recurring-expense-form-sheet";
 import { RecurringExpenseDeleteDialog } from "./recurring-expense-delete-dialog";
 import { toast } from "sonner";
@@ -17,9 +21,14 @@ import { useIsMobile } from "@/hooks/use-mobile";
 interface RecurringExpenseListProps {
   expenses: SerializedRecurringExpense[];
   categories: SerializedCategory[];
+  adapters: SerializedAdapter[];
 }
 
-export function RecurringExpenseList({ expenses, categories }: RecurringExpenseListProps) {
+export function RecurringExpenseList({
+  expenses,
+  categories,
+  adapters,
+}: RecurringExpenseListProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [editEntry, setEditEntry] = useState<SerializedRecurringExpense | null>(null);
   const [deleteEntry, setDeleteEntry] = useState<SerializedRecurringExpense | null>(null);
@@ -93,6 +102,7 @@ export function RecurringExpenseList({ expenses, categories }: RecurringExpenseL
 
         <RecurringExpenseFormSheet
           categories={categories}
+          adapters={adapters}
           entry={editEntry}
           open={formOpen || !!editEntry}
           onOpenChange={(open) => {
@@ -182,6 +192,7 @@ export function RecurringExpenseList({ expenses, categories }: RecurringExpenseL
 
       <RecurringExpenseFormSheet
         categories={categories}
+        adapters={adapters}
         entry={editEntry}
         open={formOpen || !!editEntry}
         onOpenChange={(open) => {
