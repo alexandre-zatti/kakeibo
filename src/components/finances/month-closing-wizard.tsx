@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,16 @@ import { toast } from "sonner";
 
 type Step = "reconcile" | "distribute" | "close" | "done";
 
+interface CloseResult {
+  recurringCount: number;
+  adapterResults: Array<{
+    adapterId: number;
+    adapterName: string;
+    success: boolean;
+    error?: string;
+  }>;
+}
+
 interface MonthClosingWizardProps {
   budget: MonthlyBudgetDetail;
   savingsBoxes: SerializedSavingsBox[];
@@ -41,6 +51,7 @@ export function MonthClosingWizard({
   const [bankBalance, setBankBalance] = useState<string>("");
   const [allocations, setAllocations] = useState<Record<number, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [closeResult, setCloseResult] = useState<CloseResult | null>(null);
 
   const calculatedAvailable = budget.totalAvailable;
   const bankBalanceNum = parseFloat(bankBalance) || 0;
@@ -57,6 +68,7 @@ export function MonthClosingWizard({
     setBankBalance("");
     setAllocations({});
     setIsSubmitting(false);
+    setCloseResult(null);
   }
 
   async function handleReconcile() {
@@ -119,6 +131,7 @@ export function MonthClosingWizard({
       return;
     }
 
+    setCloseResult(result.data ?? null);
     setStep("done");
     toast.success("Mes fechado com sucesso!");
   }
@@ -284,6 +297,32 @@ export function MonthClosingWizard({
                   O proximo mes ja esta disponivel para uso.
                 </p>
               </div>
+
+              {closeResult && (
+                <div className="space-y-3 rounded-md border p-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Despesas recorrentes carregadas</span>
+                    <span className="font-medium">{closeResult.recurringCount}</span>
+                  </div>
+
+                  {closeResult.adapterResults.length > 0 && (
+                    <div className="space-y-2 border-t pt-2">
+                      <p className="text-xs font-medium text-muted-foreground">Adaptadores</p>
+                      {closeResult.adapterResults.map((ar) => (
+                        <div key={ar.adapterId} className="flex items-center gap-2 text-sm">
+                          {ar.success ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                          )}
+                          <span className="flex-1">{ar.adapterName}</span>
+                          {ar.error && <span className="text-xs text-red-500">{ar.error}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <SheetFooter className="pt-4">
                 <Button onClick={() => onOpenChange(false)}>Fechar</Button>

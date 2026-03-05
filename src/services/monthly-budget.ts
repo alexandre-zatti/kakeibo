@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import logger, { serializeError } from "@/lib/logger";
+import { executeSingleAdapter, processAdapterActions } from "@/adapters/runner";
 import type {
   MonthlyBudgetDetail,
   MonthlyBudgetSummary,
@@ -196,14 +197,14 @@ export async function getMonthlyBudgetSummary(
 export async function populateFromRecurring(
   budgetId: number,
   householdId: number
-): Promise<number> {
+): Promise<{ count: number; createdExpenses: Array<{ id: number; recurringExpenseId: number }> }> {
   log.debug({ budgetId, householdId }, "Populating from recurring expenses");
 
   try {
     const budget = await prisma.monthlyBudget.findUnique({ where: { id: budgetId } });
 
     if (!budget || budget.householdId !== householdId || budget.status !== "open") {
-      return 0;
+      return { count: 0, createdExpenses: [] };
     }
 
     const recurringExpenses = await prisma.recurringExpense.findMany({
@@ -222,7 +223,7 @@ export async function populateFromRecurring(
 
     const toCreate = recurringExpenses.filter((r) => !existingRecurringIds.has(r.id));
 
-    if (toCreate.length === 0) return 0;
+    if (toCreate.length === 0) return { count: 0, createdExpenses: [] };
 
     await prisma.expenseEntry.createMany({
       data: toCreate.map((r) => ({
@@ -235,8 +236,20 @@ export async function populateFromRecurring(
       })),
     });
 
-    log.info({ budgetId, count: toCreate.length }, "Recurring expenses populated");
-    return toCreate.length;
+    // Fetch created entries to get IDs
+    const created = await prisma.expenseEntry.findMany({
+      where: {
+        monthlyBudgetId: budgetId,
+        recurringExpenseId: { in: toCreate.map((r) => r.id) },
+      },
+      select: { id: true, recurringExpenseId: true },
+    });
+
+    log.info({ budgetId, count: created.length }, "Recurring expenses populated");
+    return {
+      count: created.length,
+      createdExpenses: created as Array<{ id: number; recurringExpenseId: number }>,
+    };
   } catch (error) {
     log.error({ error: serializeError(error), budgetId }, "Failed to populate recurring");
     throw error;
@@ -246,7 +259,17 @@ export async function populateFromRecurring(
 export async function closeMonth(
   budgetId: number,
   householdId: number
-): Promise<SerializedMonthlyBudget | null> {
+): Promise<{
+  closedBudget: SerializedMonthlyBudget;
+  newBudgetId: number;
+  recurringCount: number;
+  adapterResults: Array<{
+    adapterId: number;
+    adapterName: string;
+    success: boolean;
+    error?: string;
+  }>;
+} | null> {
   log.debug({ budgetId, householdId }, "Closing month");
 
   try {
@@ -264,27 +287,101 @@ export async function closeMonth(
       return null;
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
+    // Transaction: close current month + create next
+    const result = await prisma.$transaction(async (tx) => {
       const closed = await tx.monthlyBudget.update({
         where: { id: budgetId },
         data: { status: "closed", closedAt: new Date() },
       });
 
-      // Auto-create next month
       const nextMonth = budget.month === 12 ? 1 : budget.month + 1;
       const nextYear = budget.month === 12 ? budget.year + 1 : budget.year;
 
-      await tx.monthlyBudget.upsert({
+      const newBudget = await tx.monthlyBudget.upsert({
         where: { householdId_year_month: { householdId, year: nextYear, month: nextMonth } },
         create: { householdId, year: nextYear, month: nextMonth },
         update: {},
       });
 
-      return closed;
+      return { closed, newBudget, nextYear, nextMonth };
     });
 
-    log.info({ budgetId, householdId }, "Month closed");
-    return serializeBudget(updated) as SerializedMonthlyBudget;
+    // Auto-populate recurring expenses into new month
+    const { count: recurringCount, createdExpenses } = await populateFromRecurring(
+      result.newBudget.id,
+      householdId
+    );
+
+    // Run linked adapters for recurring expenses that have an adapterId
+    const recurringWithAdapters = await prisma.recurringExpense.findMany({
+      where: {
+        householdId,
+        isActive: true,
+        adapterId: { not: null },
+      },
+      include: { adapter: true },
+    });
+
+    const adapterResults: Array<{
+      adapterId: number;
+      adapterName: string;
+      success: boolean;
+      error?: string;
+    }> = [];
+
+    for (const recurring of recurringWithAdapters) {
+      const expense = createdExpenses.find((e) => e.recurringExpenseId === recurring.id);
+      if (!expense || !recurring.adapter) continue;
+
+      try {
+        const adapterResult = await executeSingleAdapter(recurring.adapter, {
+          householdId,
+          budgetId: result.newBudget.id,
+          year: result.nextYear,
+          month: result.nextMonth,
+          adapter: recurring.adapter,
+          targetExpenseId: expense.id,
+        });
+
+        if (adapterResult.success && adapterResult.actions.length > 0) {
+          await processAdapterActions(
+            adapterResult.actions,
+            result.newBudget.id,
+            householdId,
+            result.nextYear,
+            result.nextMonth,
+            recurring.adapter.id
+          );
+        }
+
+        adapterResults.push({
+          adapterId: recurring.adapter.id,
+          adapterName: recurring.adapter.name,
+          success: adapterResult.success,
+          error: adapterResult.error,
+        });
+      } catch (error) {
+        log.error({ error, adapterId: recurring.adapter.id }, "Linked adapter execution failed");
+        adapterResults.push({
+          adapterId: recurring.adapter.id,
+          adapterName: recurring.adapter.name,
+          success: false,
+          error: error instanceof Error ? error.message : "Erro inesperado",
+        });
+      }
+    }
+
+    log.info(
+      { budgetId, householdId, recurringCount, adapterResults: adapterResults.length },
+      "Month closed with auto-populate and adapters"
+    );
+
+    return {
+      closedBudget: serializeBudget(result.closed) as SerializedMonthlyBudget,
+      newBudgetId: result.newBudget.id,
+      recurringCount,
+      adapterResults,
+    };
   } catch (error) {
     log.error({ error: serializeError(error), budgetId }, "Failed to close month");
     throw error;

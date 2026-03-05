@@ -41,11 +41,11 @@ export async function populateFromRecurringAction(
     const ctx = await resolveSessionAndHousehold();
     if ("error" in ctx) return { success: false, error: ctx.error };
 
-    const count = await populateFromRecurring(budgetId, ctx.householdId);
+    const result = await populateFromRecurring(budgetId, ctx.householdId);
 
     revalidatePath("/finances");
 
-    return { success: true, data: { count } };
+    return { success: true, data: { count: result.count } };
   } catch (error) {
     log.error({ error: serializeError(error) }, "Failed to populate recurring");
     return { success: false, error: "Erro ao carregar recorrentes" };
@@ -109,23 +109,37 @@ export async function distributeBalanceAction(
   }
 }
 
-export async function closeMonthAction(
-  budgetId: number
-): Promise<ActionResult<SerializedMonthlyBudget>> {
+export async function closeMonthAction(budgetId: number): Promise<
+  ActionResult<{
+    recurringCount: number;
+    adapterResults: Array<{
+      adapterId: number;
+      adapterName: string;
+      success: boolean;
+      error?: string;
+    }>;
+  }>
+> {
   try {
     const ctx = await resolveSessionAndHousehold();
     if ("error" in ctx) return { success: false, error: ctx.error };
 
-    const budget = await closeMonth(budgetId, ctx.householdId);
+    const result = await closeMonth(budgetId, ctx.householdId);
 
-    if (!budget) {
+    if (!result) {
       return { success: false, error: "Não foi possível fechar o mês. Verifique a conciliação." };
     }
 
     revalidatePath("/finances");
-    revalidatePath("/finances/caixinhas");
+    revalidatePath("/finances/savings");
 
-    return { success: true, data: budget };
+    return {
+      success: true,
+      data: {
+        recurringCount: result.recurringCount,
+        adapterResults: result.adapterResults,
+      },
+    };
   } catch (error) {
     log.error({ error: serializeError(error) }, "Failed to close month");
     return { success: false, error: "Erro ao fechar mês" };
