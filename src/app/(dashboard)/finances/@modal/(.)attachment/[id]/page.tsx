@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { getHouseholdByUserId } from "@/services/household";
 import { prisma } from "@/lib/prisma";
 import { AttachmentViewer } from "@/components/adapters/attachment-viewer";
-import { AttachmentSheet } from "@/components/adapters/attachment-sheet";
+import { AttachmentModal } from "@/components/adapters/attachment-modal";
 
 export default async function AttachmentInterceptedPage({
   params,
@@ -28,8 +28,8 @@ export default async function AttachmentInterceptedPage({
   if (!expense?.attachmentPath) redirect("/finances");
 
   return (
-    <AttachmentSheet title={expense.description}>
+    <AttachmentModal title={expense.description}>
       <AttachmentViewer filePath={expense.attachmentPath} />
-    </AttachmentSheet>
+    </AttachmentModal>
   );
 }
