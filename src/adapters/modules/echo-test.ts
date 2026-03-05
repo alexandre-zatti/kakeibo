@@ -7,11 +7,16 @@ export const echoTest: AdapterModule = {
   async execute(context) {
     return {
       success: true,
-      expense: {
-        description: `[Test] Adapter echo - ${context.adapter.name}`,
-        amount: 1.0,
-        categoryId: 1,
-      },
+      actions: [
+        {
+          type: "create_expense" as const,
+          data: {
+            description: `[Test] Adapter echo - ${context.adapter.name}`,
+            amount: 1.0,
+            categoryId: 1,
+          },
+        },
+      ],
     };
   },
 };

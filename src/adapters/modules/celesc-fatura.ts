@@ -20,7 +20,7 @@ export const celescFatura: AdapterModule = {
     const config = context.adapter.config as unknown as CelescConfig;
 
     if (!config?.categoryId) {
-      return { success: false, error: "Categoria não configurada no adaptador." };
+      return { success: false, error: "Categoria não configurada no adaptador.", actions: [] };
     }
 
     const { year, month } = context;
@@ -38,17 +38,21 @@ export const celescFatura: AdapterModule = {
     try {
       bill = await fetchGmailBill(context.householdId, query);
     } catch (err) {
-      return { success: false, error: (err as Error).message };
+      return { success: false, error: (err as Error).message, actions: [] };
     }
 
     if (!bill) {
       log.info({ year, month }, "No Celesc bill found for this month");
-      return { success: true };
+      return { success: true, actions: [] };
     }
 
     const amount = await parseBoleto(bill.pdfBuffer);
     if (amount === null) {
-      return { success: false, error: "Não foi possível extrair o valor da fatura do PDF." };
+      return {
+        success: false,
+        error: "Não foi possível extrair o valor da fatura do PDF.",
+        actions: [],
+      };
     }
 
     const description = `Celesc - Fatura ${MONTH_NAMES[month - 1]}/${year}`;
@@ -56,18 +60,29 @@ export const celescFatura: AdapterModule = {
 
     log.info({ amount, description, messageId: bill.messageId }, "Celesc bill processed");
 
+    const attachment = { filename, mimeType: "application/pdf" as const, data: bill.pdfBuffer };
+
+    if (context.targetExpenseId) {
+      return {
+        success: true,
+        actions: [
+          {
+            type: "update_expense" as const,
+            expenseId: context.targetExpenseId,
+            data: { amount, description, attachment },
+          },
+        ],
+      };
+    }
+
     return {
       success: true,
-      expense: {
-        description,
-        amount,
-        categoryId: config.categoryId,
-        attachment: {
-          filename,
-          mimeType: "application/pdf",
-          data: bill.pdfBuffer,
+      actions: [
+        {
+          type: "create_expense" as const,
+          data: { description, amount, categoryId: config.categoryId, attachment },
         },
-      },
+      ],
     };
   },
 };
