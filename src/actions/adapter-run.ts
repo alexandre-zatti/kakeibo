@@ -13,7 +13,8 @@ import { prisma } from "@/lib/prisma";
 const log = logger.child({ module: "actions/adapter-run" });
 
 export async function triggerAdapterRunAction(
-  budgetId: number
+  budgetId: number,
+  adapterIds?: number[]
 ): Promise<ActionResult<{ runId: number }>> {
   try {
     const ctx = await resolveSessionAndHousehold();
@@ -26,19 +27,21 @@ export async function triggerAdapterRunAction(
 
     if (!budget) return { success: false, error: "Orçamento não encontrado" };
 
-    // Get active adapters
+    // Get adapters, filtering by IDs if provided
     const adapters = await getAdapters(ctx.householdId);
-    const activeAdapters = adapters.filter((a) => a.isActive);
+    const toRun = adapterIds
+      ? adapters.filter((a) => adapterIds.includes(a.id) && a.isActive)
+      : adapters.filter((a) => a.isActive);
 
-    if (activeAdapters.length === 0) {
-      return { success: false, error: "Nenhum adaptador ativo configurado" };
+    if (toRun.length === 0) {
+      return { success: false, error: "Nenhum adaptador selecionado" };
     }
 
     // Create the run with pending logs
     const run = await createAdapterRun(
       ctx.householdId,
       budgetId,
-      activeAdapters.map((a) => a.id)
+      toRun.map((a) => a.id)
     );
 
     // Fire and forget — run adapters asynchronously

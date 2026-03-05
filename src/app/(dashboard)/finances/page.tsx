@@ -10,7 +10,8 @@ import { BudgetSummaryBar } from "@/components/finances/budget-summary-bar";
 import { IncomeSection } from "@/components/finances/income-section";
 import { ExpenseList } from "@/components/finances/expense-list";
 import { MonthClosingButton } from "@/components/finances/month-closing-button";
-import { RunAdaptersButton } from "@/components/adapters/run-adapters-button";
+import { RunAdaptersDialog } from "@/components/adapters/run-adapters-dialog";
+import { getAdapters } from "@/services/adapter";
 
 interface FinancesPageProps {
   searchParams: Promise<{ year?: string; month?: string }>;
@@ -28,10 +29,11 @@ export default async function FinancesPage({ searchParams }: FinancesPageProps) 
   const year = params.year ? parseInt(params.year, 10) : now.getFullYear();
   const month = params.month ? parseInt(params.month, 10) : now.getMonth() + 1;
 
-  const [budget, categories, savingsBoxes] = await Promise.all([
+  const [budget, categories, savingsBoxes, adapters] = await Promise.all([
     getMonthlyBudget(household.id, year, month),
     getCategoriesByHousehold(household.id),
     getSavingsBoxes(household.id),
+    getAdapters(household.id),
   ]);
 
   if (!budget) {
@@ -51,7 +53,7 @@ export default async function FinancesPage({ searchParams }: FinancesPageProps) 
     <div className="space-y-6">
       <MonthNavigator year={year} month={month} status={budget.status} />
       <div className="flex flex-wrap items-center gap-2">
-        <RunAdaptersButton budgetId={budget.id} disabled={isClosed} />
+        <RunAdaptersDialog budgetId={budget.id} adapters={adapters} disabled={isClosed} />
         <MonthClosingButton budget={budget} savingsBoxes={savingsBoxes} />
       </div>
       <BudgetSummaryBar summary={budget} />
