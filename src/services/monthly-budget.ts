@@ -135,39 +135,6 @@ export async function createMonthlyBudget(
   }
 }
 
-export async function getOrCreateMonthlyBudget(
-  householdId: number,
-  year: number,
-  month: number
-): Promise<MonthlyBudgetDetail> {
-  log.debug({ householdId, year, month }, "Getting or creating monthly budget");
-
-  try {
-    let budget = await prisma.monthlyBudget.findUnique({
-      where: { householdId_year_month: { householdId, year, month } },
-      include: budgetInclude,
-    });
-
-    if (!budget) {
-      budget = await prisma.monthlyBudget.create({
-        data: { householdId, year, month },
-        include: budgetInclude,
-      });
-      log.info({ householdId, year, month }, "Monthly budget created");
-    }
-
-    const serialized = serializeBudget(budget);
-    const incomeEntries = serializeIncomeEntries(budget.incomeEntries);
-    const expenseEntries = serializeExpenseEntries(budget.expenseEntries);
-    const summary = computeSummary(serialized, incomeEntries, expenseEntries);
-
-    return { ...summary, incomeEntries, expenseEntries };
-  } catch (error) {
-    log.error({ error: serializeError(error), householdId, year, month }, "Failed to get budget");
-    throw error;
-  }
-}
-
 export async function getMonthlyBudgetSummary(
   householdId: number,
   year: number,
