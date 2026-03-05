@@ -1,7 +1,8 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { getHouseholdByUserId } from "@/services/household";
-import { getOrCreateMonthlyBudget } from "@/services/monthly-budget";
+import { getMonthlyBudget } from "@/services/monthly-budget";
+import { EmptyMonth } from "@/components/finances/empty-month";
 import { getCategoriesByHousehold } from "@/services/category";
 import { getSavingsBoxes } from "@/services/savings-box";
 import { MonthNavigator } from "@/components/finances/month-navigator";
@@ -29,10 +30,19 @@ export default async function FinancesPage({ searchParams }: FinancesPageProps) 
   const month = params.month ? parseInt(params.month, 10) : now.getMonth() + 1;
 
   const [budget, categories, savingsBoxes] = await Promise.all([
-    getOrCreateMonthlyBudget(household.id, year, month),
+    getMonthlyBudget(household.id, year, month),
     getCategoriesByHousehold(household.id),
     getSavingsBoxes(household.id),
   ]);
+
+  if (!budget) {
+    return (
+      <div className="space-y-6">
+        <MonthNavigator year={year} month={month} status={null} />
+        <EmptyMonth year={year} month={month} />
+      </div>
+    );
+  }
 
   const incomeCategories = categories.filter((c) => c.type === "income");
   const expenseCategories = categories.filter((c) => c.type === "expense");

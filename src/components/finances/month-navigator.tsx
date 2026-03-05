@@ -24,7 +24,7 @@ const MONTH_NAMES = [
 interface MonthNavigatorProps {
   year: number;
   month: number;
-  status: string;
+  status: string | null;
 }
 
 export function MonthNavigator({ year, month, status }: MonthNavigatorProps) {
@@ -59,9 +59,11 @@ export function MonthNavigator({ year, month, status }: MonthNavigatorProps) {
         <span className="text-lg font-semibold">
           {MONTH_NAMES[month - 1]} {year}
         </span>
-        <Badge variant={isClosed ? "secondary" : "default"}>
-          {isClosed ? "Fechado" : "Aberto"}
-        </Badge>
+        {status !== null && (
+          <Badge variant={isClosed ? "secondary" : "default"}>
+            {isClosed ? "Fechado" : "Aberto"}
+          </Badge>
+        )}
       </div>
       <Button variant="outline" size="icon" onClick={goNext} className="h-8 w-8">
         <ChevronRight className="h-4 w-4" />

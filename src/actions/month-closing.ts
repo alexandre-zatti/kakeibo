@@ -2,7 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { resolveSessionAndHousehold, type ActionResult } from "@/actions/_helpers";
-import { populateFromRecurring, closeMonth, reopenMonth } from "@/services/monthly-budget";
+import {
+  populateFromRecurring,
+  closeMonth,
+  reopenMonth,
+  getMonthlyBudget,
+  createMonthlyBudget,
+} from "@/services/monthly-budget";
 import { distributeClosingBalance } from "@/services/savings-box";
 import { reconcileMonthSchema, distributeBalanceSchema } from "@/lib/schemas/finances";
 import { prisma } from "@/lib/prisma";
@@ -10,6 +16,23 @@ import type { SerializedMonthlyBudget } from "@/types/finances";
 import logger, { serializeError } from "@/lib/logger";
 
 const log = logger.child({ module: "actions/month-closing" });
+
+export async function createMonthAction(year: number, month: number): Promise<ActionResult> {
+  try {
+    const ctx = await resolveSessionAndHousehold();
+    if ("error" in ctx) return { success: false, error: ctx.error };
+
+    const existing = await getMonthlyBudget(ctx.householdId, year, month);
+    if (existing) return { success: false, error: "Mês já existe" };
+
+    await createMonthlyBudget(ctx.householdId, year, month);
+    revalidatePath("/finances");
+    return { success: true };
+  } catch (error) {
+    log.error({ error: serializeError(error) }, "Failed to create month");
+    return { success: false, error: "Erro ao criar mês" };
+  }
+}
 
 export async function populateFromRecurringAction(
   budgetId: number
