@@ -155,6 +155,33 @@ export async function deleteExpense(entryId: number, householdId: number): Promi
   }
 }
 
+export async function updateExpenseFromAdapter(
+  expenseId: number,
+  householdId: number,
+  data: {
+    amount?: number;
+    description?: string;
+    categoryId?: number;
+    attachmentPath?: string | null;
+  }
+): Promise<void> {
+  await prisma.expenseEntry.update({
+    where: { id: expenseId, monthlyBudget: { householdId } },
+    data,
+  });
+}
+
+export async function enrichExpenseAttachment(
+  expenseId: number,
+  householdId: number,
+  attachmentPath: string
+): Promise<void> {
+  await prisma.expenseEntry.update({
+    where: { id: expenseId, monthlyBudget: { householdId } },
+    data: { attachmentPath },
+  });
+}
+
 export async function toggleExpensePaid(
   entryId: number,
   householdId: number,

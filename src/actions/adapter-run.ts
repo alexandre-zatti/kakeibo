@@ -4,11 +4,9 @@ import { revalidatePath } from "next/cache";
 import { resolveSessionAndHousehold, type ActionResult } from "@/actions/_helpers";
 import { getAdapters } from "@/services/adapter";
 import { createAdapterRun, getRunLogById, updateRunLogStatus } from "@/services/adapter-run";
-import { executeAdapterRun } from "@/adapters/runner";
+import { executeAdapterRun, processAdapterActions } from "@/adapters/runner";
 import { getAdapterModule } from "@/adapters/modules";
-import { createExpense } from "@/services/expense";
-import { saveAttachment } from "@/adapters/file-storage";
-import { AdapterRunLogStatus, ExpenseSource } from "@/types/finances";
+import { AdapterRunLogStatus } from "@/types/finances";
 import logger, { serializeError } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -107,32 +105,14 @@ export async function retryAdapterLogAction(logId: number): Promise<ActionResult
           return;
         }
 
-        let expenseEntryId: number | undefined;
-        let attachmentPath: string | undefined;
-
-        if (result.expense) {
-          if (result.expense.attachment) {
-            attachmentPath = await saveAttachment(
-              ctx.householdId,
-              run.monthlyBudget.year,
-              run.monthlyBudget.month,
-              runLog.adapter.id,
-              result.expense.attachment.filename,
-              result.expense.attachment.data
-            );
-          }
-
-          const expense = await createExpense(run.monthlyBudgetId, ctx.householdId, {
-            description: result.expense.description,
-            amount: result.expense.amount,
-            categoryId: result.expense.categoryId,
-            isPaid: false,
-            source: ExpenseSource.ADAPTER,
-            attachmentPath: attachmentPath ?? null,
-          });
-
-          if (expense) expenseEntryId = expense.id;
-        }
+        const { expenseEntryId, attachmentPath } = await processAdapterActions(
+          result.actions,
+          run.monthlyBudgetId,
+          ctx.householdId,
+          run.monthlyBudget.year,
+          run.monthlyBudget.month,
+          runLog.adapter.id
+        );
 
         await updateRunLogStatus(runLog.id, AdapterRunLogStatus.SUCCESS, {
           expenseEntryId,

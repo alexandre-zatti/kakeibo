@@ -1,13 +1,103 @@
 import logger from "@/lib/logger";
 import { getAdapterModule } from "./modules";
 import { saveAttachment } from "./file-storage";
-import { createExpense } from "@/services/expense";
+import {
+  createExpense,
+  updateExpenseFromAdapter,
+  enrichExpenseAttachment,
+} from "@/services/expense";
 import { updateRunLogStatus, updateRunStatus } from "@/services/adapter-run";
 import { AdapterRunStatus, AdapterRunLogStatus, ExpenseSource } from "@/types/finances";
-import type { AdapterRunWithLogs } from "@/types/finances";
-import type { AdapterContext } from "./types";
+import type { AdapterRunWithLogs, SerializedAdapter } from "@/types/finances";
+import type { AdapterAction, AdapterContext, AdapterResult } from "./types";
 
 const log = logger.child({ module: "adapters/runner" });
+
+export async function processAdapterActions(
+  actions: AdapterAction[],
+  budgetId: number,
+  householdId: number,
+  year: number,
+  month: number,
+  adapterId: number
+): Promise<{ expenseEntryId?: number; attachmentPath?: string }> {
+  let expenseEntryId: number | undefined;
+  let attachmentPath: string | undefined;
+
+  for (const action of actions) {
+    switch (action.type) {
+      case "create_expense": {
+        if (action.data.attachment) {
+          attachmentPath = await saveAttachment(
+            householdId,
+            year,
+            month,
+            adapterId,
+            action.data.attachment.filename,
+            action.data.attachment.data
+          );
+        }
+        const expense = await createExpense(budgetId, householdId, {
+          description: action.data.description,
+          amount: action.data.amount,
+          categoryId: action.data.categoryId,
+          isPaid: false,
+          source: ExpenseSource.ADAPTER,
+          attachmentPath: attachmentPath ?? null,
+        });
+        if (expense) expenseEntryId = expense.id;
+        break;
+      }
+      case "update_expense": {
+        if (action.data.attachment) {
+          attachmentPath = await saveAttachment(
+            householdId,
+            year,
+            month,
+            adapterId,
+            action.data.attachment.filename,
+            action.data.attachment.data
+          );
+        }
+        const { attachment: _attachment, ...updateData } = action.data;
+        await updateExpenseFromAdapter(action.expenseId, householdId, {
+          ...updateData,
+          ...(attachmentPath ? { attachmentPath } : {}),
+        });
+        expenseEntryId = action.expenseId;
+        break;
+      }
+      case "enrich_expense": {
+        if (action.attachment) {
+          attachmentPath = await saveAttachment(
+            householdId,
+            year,
+            month,
+            adapterId,
+            action.attachment.filename,
+            action.attachment.data
+          );
+          await enrichExpenseAttachment(action.expenseId, householdId, attachmentPath);
+        }
+        expenseEntryId = action.expenseId;
+        break;
+      }
+    }
+  }
+
+  return { expenseEntryId, attachmentPath };
+}
+
+export async function executeSingleAdapter(
+  adapter: SerializedAdapter,
+  context: AdapterContext
+): Promise<AdapterResult> {
+  const adapterModule = getAdapterModule(adapter.moduleKey);
+  if (!adapterModule) {
+    return { success: false, error: `Module "${adapter.moduleKey}" not found`, actions: [] };
+  }
+  return adapterModule.execute(context);
+}
 
 export async function executeAdapterRun(
   run: AdapterRunWithLogs,
@@ -54,36 +144,14 @@ export async function executeAdapterRun(
         continue;
       }
 
-      let expenseEntryId: number | undefined;
-      let attachmentPath: string | undefined;
-
-      if (result.expense) {
-        // Save attachment first if present
-        if (result.expense.attachment) {
-          attachmentPath = await saveAttachment(
-            householdId,
-            year,
-            month,
-            runLog.adapter.id,
-            result.expense.attachment.filename,
-            result.expense.attachment.data
-          );
-        }
-
-        // Create expense entry
-        const expense = await createExpense(budgetId, householdId, {
-          description: result.expense.description,
-          amount: result.expense.amount,
-          categoryId: result.expense.categoryId,
-          isPaid: false,
-          source: ExpenseSource.ADAPTER,
-          attachmentPath: attachmentPath ?? null,
-        });
-
-        if (expense) {
-          expenseEntryId = expense.id;
-        }
-      }
+      const { expenseEntryId, attachmentPath } = await processAdapterActions(
+        result.actions,
+        budgetId,
+        householdId,
+        year,
+        month,
+        runLog.adapter.id
+      );
 
       await updateRunLogStatus(runLog.id, AdapterRunLogStatus.SUCCESS, {
         expenseEntryId,
