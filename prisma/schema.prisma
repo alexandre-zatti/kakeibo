@@ -245,9 +245,11 @@ model RecurringExpense {
   householdId Int      @map("household_id")
   isActive    Boolean  @default(true) @map("is_active")
   dayOfMonth  Int?     @map("day_of_month")
+  adapterId   Int?     @map("adapter_id")
 
   category          Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   household         Household      @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  adapter           Adapter?       @relation(fields: [adapterId], references: [id], onDelete: SetNull)
   generatedExpenses ExpenseEntry[]
 
   @@map("recurring_expense")
@@ -325,8 +327,9 @@ model Adapter {
   isActive    Boolean  @default(true) @map("is_active")
   householdId Int      @map("household_id")
 
-  household Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  runLogs   AdapterRunLog[]
+  household         Household          @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  runLogs           AdapterRunLog[]
+  recurringExpenses RecurringExpense[]
 
   @@unique([householdId, name])
   @@map("adapter")
