@@ -114,6 +114,7 @@ export interface SerializedExpenseEntry extends Omit<ExpenseEntry, "amount"> {
 
 export interface SerializedRecurringExpense extends Omit<RecurringExpense, "amount"> {
   amount: number;
+  adapter?: SerializedAdapter | null;
 }
 
 export interface SerializedSavingsBox extends Omit<

@@ -1,42 +1,51 @@
 import type { SerializedAdapter } from "@/types/finances";
 
+/** Actions an adapter can return for the runner to apply */
+export type AdapterAction =
+  | {
+      type: "create_expense";
+      data: {
+        description: string;
+        amount: number;
+        categoryId: number;
+        attachment?: { filename: string; mimeType: string; data: Buffer };
+      };
+    }
+  | {
+      type: "update_expense";
+      expenseId: number;
+      data: {
+        amount?: number;
+        description?: string;
+        categoryId?: number;
+        attachment?: { filename: string; mimeType: string; data: Buffer };
+      };
+    }
+  | {
+      type: "enrich_expense";
+      expenseId: number;
+      attachment?: { filename: string; mimeType: string; data: Buffer };
+    };
+
 export interface AdapterModule {
-  /** Human-readable label for module selection in UI */
   label: string;
-  /** Short description of what this module does */
   description: string;
-  /** The execution function */
   execute: (context: AdapterContext) => Promise<AdapterResult>;
 }
 
 export interface AdapterContext {
-  /** The household this adapter runs for */
   householdId: number;
-  /** The monthly budget being populated */
   budgetId: number;
-  /** Year/month of the budget */
   year: number;
   month: number;
-  /** The adapter DB record */
   adapter: SerializedAdapter;
+  /** Set when running for a specific expense (e.g. recurring expense that was just populated) */
+  targetExpenseId?: number;
 }
 
 export interface AdapterResult {
-  /** Was the adapter execution successful? */
   success: boolean;
-  /** Error message if failed */
   error?: string;
-  /** The expense data to create (omit if no bill found) */
-  expense?: {
-    description: string;
-    amount: number;
-    categoryId: number;
-    /** Optional attachment file */
-    attachment?: {
-      filename: string;
-      mimeType: string;
-      /** Raw file buffer */
-      data: Buffer;
-    };
-  };
+  /** Actions to apply (empty array = success with no side effects) */
+  actions: AdapterAction[];
 }
