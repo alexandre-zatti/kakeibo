@@ -13,7 +13,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Play, Loader2 } from "lucide-react";
 import { triggerAdapterRunAction } from "@/actions/adapter-run";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { AdapterWithLastRun } from "@/types/finances";
 
@@ -21,13 +20,18 @@ interface RunAdaptersDialogProps {
   budgetId: number;
   adapters: AdapterWithLastRun[];
   disabled?: boolean;
+  onRunStarted?: (runId: number) => void;
 }
 
-export function RunAdaptersDialog({ budgetId, adapters, disabled }: RunAdaptersDialogProps) {
+export function RunAdaptersDialog({
+  budgetId,
+  adapters,
+  disabled,
+  onRunStarted,
+}: RunAdaptersDialogProps) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const activeAdapters = adapters.filter((a) => a.isActive);
 
@@ -45,9 +49,8 @@ export function RunAdaptersDialog({ budgetId, adapters, disabled }: RunAdaptersD
     try {
       const result = await triggerAdapterRunAction(budgetId, selected);
       if (result.success) {
-        toast.success("Adaptadores iniciados! Verifique o progresso na página de adaptadores.");
-        router.refresh();
         setOpen(false);
+        onRunStarted?.(result.data!.runId);
       } else {
         toast.error(result.error ?? "Erro ao iniciar adaptadores");
       }

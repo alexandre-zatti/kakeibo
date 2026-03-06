@@ -1,5 +1,5 @@
 import { fetchGmailBill } from "@/adapters/utils/gmail-bill-fetcher";
-import { parseBoleto } from "@/adapters/utils/parse-boleto-pdf";
+import { parseBillWithGemini } from "@/adapters/utils/parse-bill-with-gemini";
 import { MONTH_NAMES } from "@/adapters/utils/constants";
 import logger from "@/lib/logger";
 import type { AdapterModule } from "../types";
@@ -46,14 +46,17 @@ export const celescFatura: AdapterModule = {
       return { success: true, actions: [] };
     }
 
-    const amount = await parseBoleto(bill.pdfBuffer);
-    if (amount === null) {
+    let extraction;
+    try {
+      extraction = await parseBillWithGemini(bill.pdfBuffer, bill.emailBody);
+    } catch (err) {
       return {
         success: false,
-        error: "Não foi possível extrair o valor da fatura do PDF.",
+        error: `Falha ao extrair valor da fatura: ${(err as Error).message}`,
         actions: [],
       };
     }
+    const amount = extraction.totalAmount;
 
     const description = `Celesc - Fatura ${MONTH_NAMES[month - 1]}/${year}`;
     const filename = bill.filename || `celesc-fatura-${year}-${String(month).padStart(2, "0")}.pdf`;

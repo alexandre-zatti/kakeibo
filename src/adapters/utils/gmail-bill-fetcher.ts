@@ -7,6 +7,7 @@ export interface GmailBillResult {
   pdfBuffer: Buffer;
   filename: string;
   messageId: string;
+  emailBody: string;
 }
 
 /**
@@ -66,7 +67,14 @@ export async function fetchGmailBill(
   const pdfBuffer = Buffer.from(pdfData, "base64url");
   const filename = pdfPart.filename || "attachment.pdf";
 
+  // Extract email body text for additional context
+  const textPart = parts.find((p) => p.mimeType === "text/plain");
+  let emailBody = "";
+  if (textPart?.body?.data) {
+    emailBody = Buffer.from(textPart.body.data, "base64url").toString("utf-8");
+  }
+
   log.info({ messageId, filename, size: pdfBuffer.length }, "PDF attachment downloaded");
 
-  return { pdfBuffer, filename, messageId };
+  return { pdfBuffer, filename, messageId, emailBody };
 }

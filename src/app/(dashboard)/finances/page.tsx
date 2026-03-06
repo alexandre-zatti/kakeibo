@@ -9,8 +9,7 @@ import { MonthNavigator } from "@/components/finances/month-navigator";
 import { BudgetSummaryBar } from "@/components/finances/budget-summary-bar";
 import { IncomeSection } from "@/components/finances/income-section";
 import { ExpenseList } from "@/components/finances/expense-list";
-import { MonthClosingButton } from "@/components/finances/month-closing-button";
-import { RunAdaptersDialog } from "@/components/adapters/run-adapters-dialog";
+import { FinancesPageClient } from "@/components/finances/finances-page-client";
 import { getAdapters } from "@/services/adapter";
 
 interface FinancesPageProps {
@@ -52,10 +51,13 @@ export default async function FinancesPage({ searchParams }: FinancesPageProps) 
   return (
     <div className="space-y-6">
       <MonthNavigator year={year} month={month} status={budget.status} />
-      <div className="flex flex-wrap items-center gap-2">
-        <RunAdaptersDialog budgetId={budget.id} adapters={adapters} disabled={isClosed} />
-        <MonthClosingButton budget={budget} savingsBoxes={savingsBoxes} />
-      </div>
+      <FinancesPageClient
+        budgetId={budget.id}
+        budget={budget}
+        adapters={adapters}
+        savingsBoxes={savingsBoxes}
+        isClosed={isClosed}
+      />
       <BudgetSummaryBar summary={budget} />
       <IncomeSection
         budgetId={budget.id}
