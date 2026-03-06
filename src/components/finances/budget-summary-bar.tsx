@@ -11,14 +11,12 @@ interface BudgetSummaryBarProps {
 const summaryItems = [
   { key: "totalIncome" as const, label: "Entrada", color: "text-green-500" },
   { key: "totalExpensesForecast" as const, label: "Previsão Gastos", color: "text-foreground" },
-  { key: "totalExpensesPaid" as const, label: "Gastos Pagos", color: "text-orange-500" },
-  { key: "totalExpensesUnpaid" as const, label: "A Pagar", color: "text-yellow-500" },
   { key: "totalAvailable" as const, label: "Disponível", color: "text-blue-500" },
 ];
 
 export function BudgetSummaryBar({ summary }: BudgetSummaryBarProps) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-3 gap-2">
       {summaryItems.map((item) => (
         <Card key={item.key}>
           <CardContent className="p-3">

@@ -51,15 +51,12 @@ function computeSummary(
   const totalExpensesPaid = expenseEntries
     .filter((e) => e.isPaid)
     .reduce((sum, e) => sum + e.amount, 0);
-  const totalExpensesUnpaid = totalExpensesForecast - totalExpensesPaid;
-  const totalAvailable = totalIncome - totalExpensesForecast;
+  const totalAvailable = totalIncome - totalExpensesPaid;
 
   return {
     ...budget,
     totalIncome,
     totalExpensesForecast,
-    totalExpensesPaid,
-    totalExpensesUnpaid,
     totalAvailable,
   } as MonthlyBudgetSummary;
 }

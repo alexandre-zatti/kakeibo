@@ -157,8 +157,6 @@ export type AdapterWithLastRun = SerializedAdapter & {
 export interface MonthlyBudgetSummary extends SerializedMonthlyBudget {
   totalIncome: number;
   totalExpensesForecast: number;
-  totalExpensesPaid: number;
-  totalExpensesUnpaid: number;
   totalAvailable: number;
 }
 
