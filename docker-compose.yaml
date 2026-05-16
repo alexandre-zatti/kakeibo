@@ -21,10 +21,25 @@ services:
       GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      SERVICE_FQDN_WEB_3000: ${KAKEIBO_PUBLIC_URL:?set KAKEIBO_PUBLIC_URL in Coolify}
     depends_on:
       postgres:
         condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      - traefik.http.routers.kakeibo-compose-web-http.entryPoints=http
+      - traefik.http.routers.kakeibo-compose-web-http.middlewares=redirect-to-https
+      - traefik.http.routers.kakeibo-compose-web-http.rule=Host(`${KAKEIBO_PUBLIC_HOST:-kakeibo-compose.zatti.tech}`) && PathPrefix(`/`)
+      - traefik.http.routers.kakeibo-compose-web-http.service=kakeibo-compose-web-http
+      - traefik.http.routers.kakeibo-compose-web-https.entryPoints=https
+      - traefik.http.routers.kakeibo-compose-web-https.middlewares=gzip
+      - traefik.http.routers.kakeibo-compose-web-https.rule=Host(`${KAKEIBO_PUBLIC_HOST:-kakeibo-compose.zatti.tech}`) && PathPrefix(`/`)
+      - traefik.http.routers.kakeibo-compose-web-https.service=kakeibo-compose-web-https
+      - traefik.http.routers.kakeibo-compose-web-https.tls=true
+      - traefik.http.routers.kakeibo-compose-web-https.tls.certresolver=letsencrypt
+      - traefik.http.services.kakeibo-compose-web-http.loadbalancer.server.port=3000
+      - traefik.http.services.kakeibo-compose-web-https.loadbalancer.server.port=3000
     volumes:
       - kakeibo_data:/app/data
     expose:
