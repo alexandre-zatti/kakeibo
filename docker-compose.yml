@@ -1,15 +1,113 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: kakeibo-postgres
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BETTER_AUTH_URL: ${KAKEIBO_PUBLIC_URL:?set KAKEIBO_PUBLIC_URL in Coolify}
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: kakeibo
-    ports:
-      - "5432:5432"
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kakeibo}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in Coolify}@postgres:5432/${POSTGRES_DB:-kakeibo}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in Coolify}
+      BETTER_AUTH_URL: ${KAKEIBO_PUBLIC_URL:?set KAKEIBO_PUBLIC_URL in Coolify}
+      NEXT_PUBLIC_BETTER_AUTH_URL: ${KAKEIBO_PUBLIC_URL:?set KAKEIBO_PUBLIC_URL in Coolify}
+      WAHA_BASE_URL: http://waha:3000
+      WAHA_API_KEY: ${WAHA_API_KEY_PLAIN:?set WAHA_API_KEY_PLAIN in Coolify}
+      CODEX_RUNNER_BASE_URL: http://codex-runner:8787
+      CODEX_RUNNER_TOKEN: ${CODEX_RUNNER_TOKEN:?set CODEX_RUNNER_TOKEN in Coolify}
+      KAKEIBO_INTERNAL_WEBHOOK_SECRET: ${KAKEIBO_INTERNAL_WEBHOOK_SECRET:?set KAKEIBO_INTERNAL_WEBHOOK_SECRET in Coolify}
+      GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      SERVICE_FQDN_WEB_3000: ${KAKEIBO_PUBLIC_URL:?set KAKEIBO_PUBLIC_URL in Coolify}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - kakeibo_data:/app/data
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/api/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kakeibo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in Coolify}
+      POSTGRES_DB: ${POSTGRES_DB:-kakeibo}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  waha:
+    image: devlikeapro/waha:latest
+    restart: unless-stopped
+    environment:
+      TZ: America/Sao_Paulo
+      WHATSAPP_DEFAULT_ENGINE: WEBJS
+      WAHA_PRINT_QR: "false"
+      WAHA_API_KEY: ${WAHA_API_KEY_HASH:?set WAHA_API_KEY_HASH in Coolify}
+      WAHA_DASHBOARD_USERNAME: ${WAHA_DASHBOARD_USERNAME:-admin}
+      WAHA_DASHBOARD_PASSWORD: ${WAHA_DASHBOARD_PASSWORD:?set WAHA_DASHBOARD_PASSWORD in Coolify}
+      WHATSAPP_SWAGGER_USERNAME: ${WAHA_SWAGGER_USERNAME:-admin}
+      WHATSAPP_SWAGGER_PASSWORD: ${WAHA_SWAGGER_PASSWORD:?set WAHA_SWAGGER_PASSWORD in Coolify}
+    volumes:
+      - waha_sessions:/app/.sessions
+      - waha_media:/app/.media
+    expose:
+      - "3000"
+
+  codex-runner:
+    build:
+      context: ./infra/codex-runner
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "8787"
+      CODEX_HOME: /home/codex/.codex
+      HOME: /home/codex
+      CODEX_WORKSPACE: /workspace
+      CODEX_DEFAULT_MODEL: ${CODEX_DEFAULT_MODEL:-gpt-5.4}
+      CODEX_DEFAULT_SANDBOX: ${CODEX_DEFAULT_SANDBOX:-read-only}
+      CODEX_RUNNER_TOKEN: ${CODEX_RUNNER_TOKEN:?set CODEX_RUNNER_TOKEN in Coolify}
+      CODEX_JOB_TIMEOUT_MS: ${CODEX_JOB_TIMEOUT_MS:-300000}
+      CODEX_MAX_PROMPT_BYTES: ${CODEX_MAX_PROMPT_BYTES:-200000}
+      CODEX_MAX_OUTPUT_BYTES: ${CODEX_MAX_OUTPUT_BYTES:-2000000}
+    volumes:
+      - codex_home:/home/codex/.codex
+      - kakeibo_data:/workspace/data:ro
+    expose:
+      - "8787"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:8787/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
 volumes:
   postgres_data:
+  kakeibo_data:
+  waha_sessions:
+  waha_media:
+  codex_home:

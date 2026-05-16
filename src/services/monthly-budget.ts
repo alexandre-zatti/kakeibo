@@ -11,10 +11,24 @@ import type {
 
 const log = logger.child({ module: "services/monthly-budget" });
 
-function serializeBudget(budget: { bankBalance: unknown; [key: string]: unknown }) {
+function serializeBudget(budget: {
+  bankBalance: unknown;
+  incomeEntries?: unknown;
+  expenseEntries?: unknown;
+  [key: string]: unknown;
+}) {
+  const {
+    incomeEntries: _incomeEntries,
+    expenseEntries: _expenseEntries,
+    ...budgetFields
+  } = budget;
+
   return {
-    ...budget,
-    bankBalance: budget.bankBalance ? Number(budget.bankBalance) : null,
+    ...budgetFields,
+    bankBalance:
+      budget.bankBalance !== null && budget.bankBalance !== undefined
+        ? Number(budget.bankBalance)
+        : null,
   };
 }
 
