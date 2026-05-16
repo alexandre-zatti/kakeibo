@@ -33,6 +33,8 @@ Optional:
 - `GOOGLE_GEMINI_API_KEY`
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
+- `KAKEIBO_WHATSAPP_SESSION`
+- `KAKEIBO_WHATSAPP_DEFAULT_CHAT_ID`
 - `CODEX_DEFAULT_MODEL`
 - `CODEX_DEFAULT_SANDBOX`
 - `CODEX_JOB_TIMEOUT_MS`
@@ -50,6 +52,14 @@ WAHA_API_KEY_HASH="sha512:$(printf '%s' "$WAHA_API_KEY_PLAIN" | shasum -a 512 | 
 
 Store the plain key in `WAHA_API_KEY_PLAIN` for Kakeibo requests and the hashed
 value in `WAHA_API_KEY_HASH` for the WAHA service.
+
+## WhatsApp Defaults
+
+Use `KAKEIBO_WHATSAPP_SESSION` for the WAHA session name Kakeibo should use.
+It defaults to `default`.
+
+Use `KAKEIBO_WHATSAPP_DEFAULT_CHAT_ID` for the household group chat id. Keep
+the real chat id in Coolify, not in Git.
 
 ## Codex Authentication
 
