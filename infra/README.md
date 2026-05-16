@@ -17,7 +17,6 @@ host port mappings to `postgres`, `waha`, or `codex-runner`.
 Set these in Coolify, not in Git:
 
 - `KAKEIBO_PUBLIC_URL`
-- `KAKEIBO_PUBLIC_HOST` (hostname only, no `https://`)
 - `POSTGRES_PASSWORD`
 - `BETTER_AUTH_SECRET`
 - `WAHA_API_KEY_PLAIN`

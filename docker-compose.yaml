@@ -30,11 +30,11 @@ services:
       - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
       - traefik.http.routers.kakeibo-compose-web-http.entryPoints=http
       - traefik.http.routers.kakeibo-compose-web-http.middlewares=redirect-to-https
-      - traefik.http.routers.kakeibo-compose-web-http.rule=Host(`${KAKEIBO_PUBLIC_HOST:-kakeibo-compose.zatti.tech}`) && PathPrefix(`/`)
+      - traefik.http.routers.kakeibo-compose-web-http.rule=Host(`kakeibo-compose.zatti.tech`) && PathPrefix(`/`)
       - traefik.http.routers.kakeibo-compose-web-http.service=kakeibo-compose-web-http
       - traefik.http.routers.kakeibo-compose-web-https.entryPoints=https
       - traefik.http.routers.kakeibo-compose-web-https.middlewares=gzip
-      - traefik.http.routers.kakeibo-compose-web-https.rule=Host(`${KAKEIBO_PUBLIC_HOST:-kakeibo-compose.zatti.tech}`) && PathPrefix(`/`)
+      - traefik.http.routers.kakeibo-compose-web-https.rule=Host(`kakeibo-compose.zatti.tech`) && PathPrefix(`/`)
       - traefik.http.routers.kakeibo-compose-web-https.service=kakeibo-compose-web-https
       - traefik.http.routers.kakeibo-compose-web-https.tls=true
       - traefik.http.routers.kakeibo-compose-web-https.tls.certresolver=letsencrypt
