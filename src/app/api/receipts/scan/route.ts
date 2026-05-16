@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { extractReceiptData } from "@/lib/gemini";
 import { receiptDataSchema, uploadRequestSchema } from "@/lib/schemas/receipt";
+import { createPurchaseFromReceiptData } from "@/services/grocery-import";
 import logger from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
@@ -45,39 +45,10 @@ export async function POST(request: NextRequest) {
 
     const receiptData = validationResult.data;
 
-    // 5. Parse date if provided
-    let boughtAt: Date | null = null;
-    if (receiptData.purchaseDate) {
-      const parsed = new Date(receiptData.purchaseDate);
-      if (!isNaN(parsed.getTime())) {
-        boughtAt = parsed;
-      }
-    }
-
-    // 6. Save to database with status=2 (needs review)
-    const purchase = await prisma.purchase.create({
-      data: {
-        userId: session.user.id,
-        status: 2, // needs_review
-        totalValue: receiptData.totalValue,
-        storeName: receiptData.storeName,
-        boughtAt,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        products: {
-          create: receiptData.products.map((product) => ({
-            code: product.code,
-            description: product.description,
-            unitValue: product.unitValue,
-            unitIdentifier: product.unitIdentifier,
-            quantity: product.quantity,
-            totalValue: product.totalValue,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          })),
-        },
-      },
-      include: { products: true },
+    const purchase = await createPurchaseFromReceiptData({
+      userId: session.user.id,
+      receiptData,
+      fallbackBoughtAt: null,
     });
 
     logger.info(

@@ -17,7 +17,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+    "start:whatsapp-consumer": "tsx src/consumers/whatsapp-consumer.ts",
     "seed:local": "tsx scripts/seed-local-dev.ts",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "lint": "next lint",
     "lint:fix": "next lint --fix"
   },
@@ -68,6 +70,7 @@
     "@types/react-dom": "^19.0.2",
     "autoprefixer": "^10.4.23",
     "dotenv": "^17.2.3",
+    "esbuild": "0.27.3",
     "eslint": "^9.19.0",
     "eslint-config-next": "^15.1.8",
     "eslint-config-prettier": "^10.1.8",

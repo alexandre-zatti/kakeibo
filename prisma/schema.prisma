@@ -372,3 +372,31 @@ model AdapterRunLog {
   @@map("adapter_run_log")
   @@schema("kakeibo")
 }
+
+// =============================================================================
+// WhatsApp Command Runs
+// =============================================================================
+
+model WhatsappCommandRun {
+  id                        Int       @id @default(autoincrement())
+  createdAt                 DateTime  @default(now()) @map("created_at")
+  updatedAt                 DateTime  @updatedAt @map("updated_at")
+  command                   String    @db.VarChar(80)
+  mode                      String    @db.VarChar(20)
+  status                    String    @default("queued") @db.VarChar(30)
+  chatId                    String    @map("chat_id") @db.VarChar(120)
+  inboundMessageId          String    @unique @map("inbound_message_id") @db.VarChar(255)
+  outboundAckMessageId      String?   @map("outbound_ack_message_id") @db.VarChar(255)
+  outboundProposalMessageId String?   @map("outbound_proposal_message_id") @db.VarChar(255)
+  entityType                String?   @map("entity_type") @db.VarChar(80)
+  entityId                  Int?      @map("entity_id")
+  mediaPath                 String?   @map("media_path") @db.VarChar(500)
+  errorMessage              String?   @map("error_message") @db.Text
+  completedAt               DateTime? @map("completed_at")
+
+  @@index([chatId])
+  @@index([outboundProposalMessageId])
+  @@index([entityType, entityId])
+  @@map("whatsapp_command_run")
+  @@schema("kakeibo")
+}

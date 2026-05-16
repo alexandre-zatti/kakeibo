@@ -17,6 +17,7 @@ services:
       WAHA_API_KEY: ${WAHA_API_KEY_PLAIN:?set WAHA_API_KEY_PLAIN in Coolify}
       KAKEIBO_WHATSAPP_SESSION: ${KAKEIBO_WHATSAPP_SESSION:-default}
       KAKEIBO_WHATSAPP_DEFAULT_CHAT_ID: ${KAKEIBO_WHATSAPP_DEFAULT_CHAT_ID:-}
+      KAKEIBO_WHATSAPP_DEFAULT_USER_ID: ${KAKEIBO_WHATSAPP_DEFAULT_USER_ID:-}
       CODEX_RUNNER_BASE_URL: http://codex-runner:8787
       CODEX_RUNNER_TOKEN: ${CODEX_RUNNER_TOKEN:?set CODEX_RUNNER_TOKEN in Coolify}
       KAKEIBO_INTERNAL_WEBHOOK_SECRET: ${KAKEIBO_INTERNAL_WEBHOOK_SECRET:?set KAKEIBO_INTERNAL_WEBHOOK_SECRET in Coolify}
@@ -53,6 +54,43 @@ services:
       retries: 10
       start_period: 20s
 
+  whatsapp-consumer:
+    build:
+      context: .
+      dockerfile: infra/whatsapp-consumer/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      WHATSAPP_CONSUMER_PORT: "8788"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kakeibo}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in Coolify}@postgres:5432/${POSTGRES_DB:-kakeibo}
+      WAHA_BASE_URL: http://waha:3000
+      WAHA_API_KEY: ${WAHA_API_KEY_PLAIN:?set WAHA_API_KEY_PLAIN in Coolify}
+      KAKEIBO_WHATSAPP_SESSION: ${KAKEIBO_WHATSAPP_SESSION:-default}
+      KAKEIBO_WHATSAPP_DEFAULT_CHAT_ID: ${KAKEIBO_WHATSAPP_DEFAULT_CHAT_ID:?set KAKEIBO_WHATSAPP_DEFAULT_CHAT_ID in Coolify}
+      KAKEIBO_WHATSAPP_DEFAULT_USER_ID: ${KAKEIBO_WHATSAPP_DEFAULT_USER_ID:-}
+      KAKEIBO_DATA_ROOT: /app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      waha:
+        condition: service_started
+    volumes:
+      - kakeibo_data:/app/data
+    expose:
+      - "8788"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:8788/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -81,6 +119,10 @@ services:
       WAHA_DASHBOARD_PASSWORD: ${WAHA_DASHBOARD_PASSWORD:?set WAHA_DASHBOARD_PASSWORD in Coolify}
       WHATSAPP_SWAGGER_USERNAME: ${WAHA_SWAGGER_USERNAME:-admin}
       WHATSAPP_SWAGGER_PASSWORD: ${WAHA_SWAGGER_PASSWORD:?set WAHA_SWAGGER_PASSWORD in Coolify}
+      WHATSAPP_HOOK_URL: http://whatsapp-consumer:8788/events
+      WHATSAPP_HOOK_EVENTS: message.any,message.reaction
+      WHATSAPP_DOWNLOAD_MEDIA: "true"
+      WHATSAPP_FILES_MIMETYPES: image/jpeg,image/png,image/webp
     volumes:
       - waha_sessions:/app/.sessions
       - waha_media:/app/.media
