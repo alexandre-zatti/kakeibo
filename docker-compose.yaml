@@ -70,6 +70,8 @@ services:
       KAKEIBO_WHATSAPP_DEFAULT_USER_ID: ${KAKEIBO_WHATSAPP_DEFAULT_USER_ID:-}
       KAKEIBO_DATA_ROOT: /app/data
     depends_on:
+      web:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       waha:
