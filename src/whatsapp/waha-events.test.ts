@@ -8,9 +8,9 @@ test("buildWahaWebSocketUrl points to the internal WAHA websocket event stream",
     buildWahaWebSocketUrl({
       baseUrl: "http://waha:3000",
       apiKey: "secret",
-      session: "default",
-      events: ["message.any", "message.reaction"],
+      session: "*",
+      events: ["message", "message.any", "message.reaction"],
     }),
-    "ws://waha:3000/ws?x-api-key=secret&session=default&events=message.any&events=message.reaction"
+    "ws://waha:3000/ws?x-api-key=secret&session=*&events=message&events=message.any&events=message.reaction"
   );
 });

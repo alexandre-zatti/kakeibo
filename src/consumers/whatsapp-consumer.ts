@@ -425,14 +425,14 @@ function connectWahaWebSocket(): void {
   const url = buildWahaWebSocketUrl({
     baseUrl: wahaBaseUrl,
     apiKey: wahaApiKey,
-    session: config.session,
-    events: ["message.any", "message.reaction"],
+    session: "*",
+    events: ["message", "message.any", "message.reaction"],
   });
   const redactedUrl = buildWahaWebSocketUrl({
     baseUrl: wahaBaseUrl,
     apiKey: "***",
-    session: config.session,
-    events: ["message.any", "message.reaction"],
+    session: "*",
+    events: ["message", "message.any", "message.reaction"],
   });
 
   log.info({ url: redactedUrl }, "connecting to WAHA websocket");
