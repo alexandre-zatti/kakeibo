@@ -29,6 +29,7 @@ import {
   formatRejectConfirmationMessage,
 } from "@/whatsapp/messages";
 import { WahaClient } from "@/whatsapp/waha-client";
+import { buildWahaWebSocketUrl } from "@/whatsapp/waha-events";
 
 const log = logger.child({ module: "whatsapp-consumer" });
 
@@ -57,9 +58,11 @@ function readConfig(): Config {
 }
 
 const config = readConfig();
+const wahaBaseUrl = requiredEnv("WAHA_BASE_URL");
+const wahaApiKey = requiredEnv("WAHA_API_KEY");
 const waha = new WahaClient(
-  requiredEnv("WAHA_BASE_URL"),
-  requiredEnv("WAHA_API_KEY"),
+  wahaBaseUrl,
+  wahaApiKey,
   config.session
 );
 let resolvedDefaultUserId: string | null = null;
@@ -417,6 +420,52 @@ async function failStaleProcessingRuns(): Promise<void> {
 }
 
 await failStaleProcessingRuns();
+
+function connectWahaWebSocket(): void {
+  const url = buildWahaWebSocketUrl({
+    baseUrl: wahaBaseUrl,
+    apiKey: wahaApiKey,
+    session: config.session,
+    events: ["message.any", "message.reaction"],
+  });
+  const redactedUrl = buildWahaWebSocketUrl({
+    baseUrl: wahaBaseUrl,
+    apiKey: "***",
+    session: config.session,
+    events: ["message.any", "message.reaction"],
+  });
+
+  log.info({ url: redactedUrl }, "connecting to WAHA websocket");
+
+  const socket = new WebSocket(url);
+
+  socket.addEventListener("open", () => {
+    log.info({ url: redactedUrl }, "WAHA websocket connected");
+  });
+
+  socket.addEventListener("message", (event) => {
+    void (async () => {
+      const payload = typeof event.data === "string" ? event.data : event.data.toString();
+      await handleEvent(JSON.parse(payload));
+    })().catch((error) => {
+      log.error({ error: serializeError(error) }, "WAHA websocket event failed");
+    });
+  });
+
+  socket.addEventListener("error", (event) => {
+    log.error({ eventType: event.type }, "WAHA websocket error");
+  });
+
+  socket.addEventListener("close", (event) => {
+    log.warn(
+      { code: event.code, reason: event.reason, wasClean: event.wasClean },
+      "WAHA websocket closed; reconnecting"
+    );
+    setTimeout(connectWahaWebSocket, 5000).unref();
+  });
+}
+
+connectWahaWebSocket();
 
 const server = http.createServer(async (req, res) => {
   try {
