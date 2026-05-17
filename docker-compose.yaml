@@ -130,7 +130,7 @@ services:
       - "3000"
 
   codex-runner:
-    image: ghcr.io/alexandre-zatti/kakeibo-codex-runner:codex-0.130.0-sha-34fa93eb38518bc9c358c9a467f30ffdd1a17ccc
+    image: ghcr.io/alexandre-zatti/kakeibo-codex-runner:codex-0.130.0-sha-23fcbce0d450a0cb90eb6583671684b8f7b74d8a
     restart: unless-stopped
     environment:
       NODE_ENV: production
