@@ -202,8 +202,6 @@ function buildCodexExecArgs({ model, sandbox }) {
     "exec",
     "--json",
     "--skip-git-repo-check",
-    "--ask-for-approval",
-    "never",
     "--sandbox",
     sandbox,
     "--model",

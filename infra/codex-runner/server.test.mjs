@@ -177,8 +177,7 @@ test("codex smoke endpoint runs a fixed read-only Codex exec prompt", async (t) 
   assert.equal(execCall.input.includes("ignore me"), false);
   assert.deepEqual(execCall.args.slice(0, 2), ["exec", "--json"]);
   assert.equal(execCall.args.includes("--skip-git-repo-check"), true);
-  assert.equal(execCall.args.includes("--ask-for-approval"), true);
-  assert.equal(execCall.args.includes("never"), true);
+  assert.equal(execCall.args.includes("--ask-for-approval"), false);
   assert.equal(execCall.args.includes("--sandbox"), true);
   assert.equal(execCall.args.includes("read-only"), true);
 });
