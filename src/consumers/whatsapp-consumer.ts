@@ -13,6 +13,7 @@ import {
 } from "@/services/whatsapp-command-run";
 import { PurchaseStatus } from "@/types/purchase";
 import { getCommand, getHelpMessage, parseCommand } from "@/whatsapp/command-registry";
+import { RecentWahaEventDedupe } from "@/whatsapp/event-dedupe";
 import {
   normalizeWahaEvent,
   summarizeWahaEvent,
@@ -65,6 +66,7 @@ const waha = new WahaClient(
   wahaApiKey,
   config.session
 );
+const eventDedupe = new RecentWahaEventDedupe({ ttlMs: 10 * 60 * 1000 });
 let resolvedDefaultUserId: string | null = null;
 
 async function getDefaultUserId(): Promise<string> {
@@ -373,7 +375,7 @@ async function handleReaction(reaction: NormalizedWahaReaction): Promise<void> {
   }
 }
 
-function shouldLogWebhookSummary(summary: WahaEventSummary): boolean {
+function shouldLogEventSummary(summary: WahaEventSummary): boolean {
   return summary.bodyKind === "command" || summary.eventName === "message.reaction";
 }
 
@@ -382,9 +384,9 @@ async function handleEvent(event: unknown): Promise<void> {
     chatId: config.chatId,
     session: config.session,
   });
-  const shouldLog = shouldLogWebhookSummary(summary);
+  const shouldLog = shouldLogEventSummary(summary);
   if (shouldLog) {
-    log.info({ event: summary }, "whatsapp webhook event received");
+    log.info({ event: summary }, "whatsapp event received");
   }
 
   const normalized = normalizeWahaEvent(event, {
@@ -393,8 +395,19 @@ async function handleEvent(event: unknown): Promise<void> {
   });
   if (!normalized) {
     if (shouldLog) {
-      log.info({ event: summary }, "whatsapp webhook event ignored");
+      log.info({ event: summary }, "whatsapp event ignored");
     }
+    return;
+  }
+  if (!eventDedupe.accept(normalized)) {
+    log.info(
+      {
+        messageId: normalized.messageId,
+        eventType: normalized.type,
+        source: normalized.source,
+      },
+      "duplicate whatsapp event ignored"
+    );
     return;
   }
 
@@ -420,6 +433,20 @@ async function failStaleProcessingRuns(): Promise<void> {
 }
 
 await failStaleProcessingRuns();
+
+async function ensureWahaSessionReady(): Promise<void> {
+  const session = await waha.ensureSessionStarted();
+  log.info(
+    {
+      session: {
+        name: session.name,
+        status: session.status,
+        hasMe: Boolean(session.me),
+      },
+    },
+    "WAHA session ready"
+  );
+}
 
 function connectWahaWebSocket(): void {
   const url = buildWahaWebSocketUrl({
@@ -465,6 +492,7 @@ function connectWahaWebSocket(): void {
   });
 }
 
+await ensureWahaSessionReady();
 connectWahaWebSocket();
 
 const server = http.createServer(async (req, res) => {
