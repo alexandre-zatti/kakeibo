@@ -1,6 +1,7 @@
 services:
   web:
     image: ghcr.io/alexandre-zatti/kakeibo-web:main
+    pull_policy: always
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -53,6 +54,7 @@ services:
 
   whatsapp-consumer:
     image: ghcr.io/alexandre-zatti/kakeibo-whatsapp-consumer:main
+    pull_policy: always
     restart: unless-stopped
     environment:
       NODE_ENV: production
