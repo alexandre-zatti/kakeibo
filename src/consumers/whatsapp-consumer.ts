@@ -13,7 +13,13 @@ import {
 } from "@/services/whatsapp-command-run";
 import { PurchaseStatus } from "@/types/purchase";
 import { getCommand, getHelpMessage, parseCommand } from "@/whatsapp/command-registry";
-import { normalizeWahaEvent, type NormalizedWahaMessage, type NormalizedWahaReaction } from "@/whatsapp/events";
+import {
+  normalizeWahaEvent,
+  summarizeWahaEvent,
+  type NormalizedWahaMessage,
+  type NormalizedWahaReaction,
+  type WahaEventSummary,
+} from "@/whatsapp/events";
 import { fakeGroceryReceiptData } from "@/whatsapp/fake-extractor";
 import { deleteTemporaryMedia, isSupportedGroceryImage, storeTemporaryMedia } from "@/whatsapp/media-store";
 import {
@@ -103,7 +109,15 @@ function isKakeiboTemplate(body: string): boolean {
 }
 
 async function handleHelp(message: NormalizedWahaMessage): Promise<void> {
-  await waha.sendText(message.chatId, getHelpMessage());
+  const outboundMessageId = await waha.sendText(message.chatId, getHelpMessage());
+  log.info(
+    {
+      command: "/help",
+      inboundMessageId: message.messageId,
+      outboundMessageId,
+    },
+    "whatsapp help response sent"
+  );
 }
 
 async function handleNewGrocery(message: NormalizedWahaMessage, note: string): Promise<void> {
@@ -287,10 +301,46 @@ async function handleApproveRejectReply(
 }
 
 async function handleMessage(message: NormalizedWahaMessage): Promise<void> {
-  if (message.source === "api" || isKakeiboTemplate(message.body)) return;
+  if (message.source === "api" || isKakeiboTemplate(message.body)) {
+    log.info(
+      {
+        messageId: message.messageId,
+        source: message.source,
+        fromMe: message.fromMe,
+      },
+      "whatsapp message ignored"
+    );
+    return;
+  }
 
   const parsed = parseCommand(message.body);
-  if (!parsed) return;
+  if (!parsed) {
+    if (message.body.trim().startsWith("/")) {
+      log.info(
+        {
+          messageId: message.messageId,
+          source: message.source,
+          fromMe: message.fromMe,
+        },
+        "unknown whatsapp command ignored"
+      );
+    }
+    return;
+  }
+
+  const command = getCommand(parsed.name);
+  log.info(
+    {
+      command: parsed.name,
+      mode: command?.mode ?? "unknown",
+      messageId: message.messageId,
+      source: message.source,
+      fromMe: message.fromMe,
+      hasMedia: Boolean(message.media),
+      isReply: Boolean(message.replyToMessageId),
+    },
+    "whatsapp command received"
+  );
 
   switch (parsed.name) {
     case "/help":
@@ -320,12 +370,30 @@ async function handleReaction(reaction: NormalizedWahaReaction): Promise<void> {
   }
 }
 
+function shouldLogWebhookSummary(summary: WahaEventSummary): boolean {
+  return summary.bodyKind === "command" || summary.eventName === "message.reaction";
+}
+
 async function handleEvent(event: unknown): Promise<void> {
+  const summary = summarizeWahaEvent(event, {
+    chatId: config.chatId,
+    session: config.session,
+  });
+  const shouldLog = shouldLogWebhookSummary(summary);
+  if (shouldLog) {
+    log.info({ event: summary }, "whatsapp webhook event received");
+  }
+
   const normalized = normalizeWahaEvent(event, {
     chatId: config.chatId,
     session: config.session,
   });
-  if (!normalized) return;
+  if (!normalized) {
+    if (shouldLog) {
+      log.info({ event: summary }, "whatsapp webhook event ignored");
+    }
+    return;
+  }
 
   if (normalized.type === "message") {
     await handleMessage(normalized);

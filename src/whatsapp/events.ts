@@ -33,6 +33,20 @@ interface NormalizeConfig {
   session: string;
 }
 
+export interface WahaEventSummary {
+  eventName: string | null;
+  session: string | null;
+  chatId: string | null;
+  messageId: string | null;
+  source: string | null;
+  fromMe: boolean;
+  bodyKind: "empty" | "text" | "command";
+  hasMedia: boolean;
+  sessionMatched: boolean;
+  chatMatched: boolean;
+  supportedEvent: boolean;
+}
+
 function serializedId(value: unknown): string | null {
   if (!value) return null;
   if (typeof value === "string") return value;
@@ -75,6 +89,60 @@ function normalizeReplyToMessageId(payload: Record<string, unknown>): string | n
   if (!replyTo || typeof replyTo !== "object") return null;
   const raw = replyTo as Record<string, unknown>;
   return serializedId(raw.id);
+}
+
+export function summarizeWahaEvent(
+  event: unknown,
+  config: NormalizeConfig
+): WahaEventSummary {
+  const emptySummary: WahaEventSummary = {
+    eventName: null,
+    session: null,
+    chatId: null,
+    messageId: null,
+    source: null,
+    fromMe: false,
+    bodyKind: "empty",
+    hasMedia: false,
+    sessionMatched: false,
+    chatMatched: false,
+    supportedEvent: false,
+  };
+
+  if (!event || typeof event !== "object") return emptySummary;
+  const rawEvent = event as Record<string, unknown>;
+  const payload = rawEvent.payload;
+  if (!payload || typeof payload !== "object") {
+    return {
+      ...emptySummary,
+      eventName: typeof rawEvent.event === "string" ? rawEvent.event : null,
+      session: typeof rawEvent.session === "string" ? rawEvent.session : null,
+    };
+  }
+
+  const rawPayload = payload as Record<string, unknown>;
+  const eventName = typeof rawEvent.event === "string" ? rawEvent.event : null;
+  const session = typeof rawEvent.session === "string" ? rawEvent.session : config.session;
+  const chatId = inferChatId(rawPayload);
+  const body = typeof rawPayload.body === "string" ? rawPayload.body.trim() : "";
+  const supportedEvent =
+    eventName === "message.any" ||
+    eventName === "message" ||
+    eventName === "message.reaction";
+
+  return {
+    eventName,
+    session,
+    chatId,
+    messageId: serializedId(rawPayload.id),
+    source: typeof rawPayload.source === "string" ? rawPayload.source : null,
+    fromMe: rawPayload.fromMe === true,
+    bodyKind: body.startsWith("/") ? "command" : body ? "text" : "empty",
+    hasMedia: Boolean(rawPayload.media),
+    sessionMatched: session === config.session,
+    chatMatched: chatId === config.chatId,
+    supportedEvent,
+  };
 }
 
 export function normalizeWahaEvent(

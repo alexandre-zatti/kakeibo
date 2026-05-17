@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { normalizeWahaEvent } from "./events";
+import { normalizeWahaEvent, summarizeWahaEvent } from "./events";
 
 test("normalizeWahaEvent extracts command messages for the configured chat", () => {
   const event = normalizeWahaEvent(
@@ -82,5 +82,36 @@ test("normalizeWahaEvent extracts reaction target ids", () => {
     emoji: "✅",
     targetMessageId: "true_120@g.us_PROPOSAL",
     source: null,
+  });
+});
+
+test("summarizeWahaEvent reports command-like webhook routing facts without message text", () => {
+  const summary = summarizeWahaEvent(
+    {
+      event: "message.any",
+      session: "default",
+      payload: {
+        id: "false_120@g.us_HELP",
+        from: "120@g.us",
+        body: "/help",
+        fromMe: true,
+        source: "app",
+      },
+    },
+    { chatId: "120@g.us", session: "default" }
+  );
+
+  assert.deepEqual(summary, {
+    eventName: "message.any",
+    session: "default",
+    chatId: "120@g.us",
+    messageId: "false_120@g.us_HELP",
+    source: "app",
+    fromMe: true,
+    bodyKind: "command",
+    hasMedia: false,
+    sessionMatched: true,
+    chatMatched: true,
+    supportedEvent: true,
   });
 });
