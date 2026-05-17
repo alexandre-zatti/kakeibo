@@ -13,6 +13,15 @@ const jobTimeoutMs = Number(process.env.CODEX_JOB_TIMEOUT_MS || 300_000);
 const maxPromptBytes = Number(process.env.CODEX_MAX_PROMPT_BYTES || 200_000);
 const maxOutputBytes = Number(process.env.CODEX_MAX_OUTPUT_BYTES || 2_000_000);
 const codexHome = process.env.CODEX_HOME || "/home/codex/.codex";
+const smokeExpectedText = "KAKEIBO_CODEX_SMOKE_OK";
+const smokePrompt = [
+  "This is a deployment smoke test for the Kakeibo Codex runner.",
+  `Reply with exactly: ${smokeExpectedText}`,
+  "Do not include any other text.",
+].join("\n");
+const smokeTimeoutMs = Number(
+  process.env.CODEX_SMOKE_TIMEOUT_MS || Math.min(jobTimeoutMs, 120_000)
+);
 
 async function ensureCodexConfig() {
   await fs.mkdir(codexHome, { recursive: true });
@@ -188,6 +197,60 @@ async function handleVersion(res) {
   });
 }
 
+function buildCodexExecArgs({ model, sandbox }) {
+  return [
+    "exec",
+    "--json",
+    "--skip-git-repo-check",
+    "--ask-for-approval",
+    "never",
+    "--sandbox",
+    sandbox,
+    "--model",
+    model,
+    "--cd",
+    workspace,
+    "-",
+  ];
+}
+
+async function runCodexExec(
+  prompt,
+  { model = defaultModel, sandbox = defaultSandbox, timeoutMs = jobTimeoutMs } = {}
+) {
+  const args = buildCodexExecArgs({ model, sandbox });
+
+  return run("codex", args, {
+    input: prompt,
+    timeoutMs,
+  });
+}
+
+async function handleSmoke(res) {
+  const result = await runCodexExec(smokePrompt, {
+    sandbox: "read-only",
+    timeoutMs: smokeTimeoutMs,
+  });
+  const summary = extractCodexSummary(result.stdout);
+  const expectedTextMatched =
+    typeof summary.lastMessage === "string" && summary.lastMessage.trim() === smokeExpectedText;
+  const usageCaptured = summary.usage !== null;
+  const ok = result.exitCode === 0 && expectedTextMatched && usageCaptured;
+
+  json(res, ok ? 200 : 500, {
+    ok,
+    exitCode: result.exitCode,
+    signal: result.signal ?? null,
+    truncated: result.truncated,
+    expectedTextMatched,
+    expectedText: smokeExpectedText,
+    usageCaptured,
+    lastMessage: summary.lastMessage,
+    usage: summary.usage,
+    stderr: result.stderr.trim(),
+  });
+}
+
 async function handleJob(req, res) {
   const body = await readJsonBody(req);
   const prompt = body.prompt;
@@ -204,23 +267,9 @@ async function handleJob(req, res) {
   }
 
   const model = typeof body.model === "string" && body.model.trim() ? body.model : defaultModel;
-  const args = [
-    "exec",
-    "--json",
-    "--skip-git-repo-check",
-    "--ask-for-approval",
-    "never",
-    "--sandbox",
-    sandbox,
-    "--model",
+  const result = await runCodexExec(prompt, {
     model,
-    "--cd",
-    workspace,
-    "-",
-  ];
-
-  const result = await run("codex", args, {
-    input: prompt,
+    sandbox,
     timeoutMs: Number(body.timeoutMs || jobTimeoutMs),
   });
   const summary = extractCodexSummary(result.stdout);
@@ -257,6 +306,11 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "GET" && url.pathname === "/codex/version") {
       await handleVersion(res);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/codex/smoke") {
+      await handleSmoke(res);
       return;
     }
 

@@ -99,7 +99,27 @@ curl -fsS -H "X-Api-Key: $WAHA_API_KEY_PLAIN" http://waha:3000/api/sessions
 curl -fsS -H "Authorization: Bearer $CODEX_RUNNER_TOKEN" http://codex-runner:8787/codex/login/status
 ```
 
-Run a minimal Codex job only after `codex login status` succeeds:
+Run the fixed Codex image smoke only after `codex login status` succeeds:
+
+```sh
+curl -fsS \
+  -X POST \
+  -H "Authorization: Bearer $CODEX_RUNNER_TOKEN" \
+  http://codex-runner:8787/codex/smoke
+```
+
+From outside the compose network, use the public web app's protected internal
+route. It validates the runner Codex CLI version, persisted Codex login, and a
+fixed read-only Codex execution without exposing arbitrary prompts publicly:
+
+```sh
+curl -fsS \
+  -X POST \
+  -H "Authorization: Bearer $KAKEIBO_INTERNAL_WEBHOOK_SECRET" \
+  https://kakeibo.zatti.tech/api/internal/codex/smoke
+```
+
+For broader internal jobs, use `/jobs` only after the fixed smoke passes:
 
 ```sh
 curl -fsS \
