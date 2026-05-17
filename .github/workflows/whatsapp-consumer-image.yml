@@ -1,0 +1,60 @@
+name: whatsapp-consumer image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".dockerignore"
+      - "infra/whatsapp-consumer/**"
+      - "prisma/**"
+      - "prisma.config.ts"
+      - "tsconfig.json"
+      - "src/consumers/whatsapp-consumer.ts"
+      - "src/lib/prisma.ts"
+      - "src/lib/logger.ts"
+      - "src/lib/schemas/receipt.ts"
+      - "src/services/grocery-import.ts"
+      - "src/services/whatsapp-command-run.ts"
+      - "src/types/purchase.ts"
+      - "src/whatsapp/**"
+      - ".github/workflows/whatsapp-consumer-image.yml"
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: alexandre-zatti/kakeibo-whatsapp-consumer
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./infra/whatsapp-consumer/Dockerfile
+          push: true
+          platforms: linux/amd64
+          cache-from: type=gha,scope=kakeibo-whatsapp-consumer
+          cache-to: type=gha,scope=kakeibo-whatsapp-consumer,mode=max
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main
+          labels: |
+            org.opencontainers.image.source=https://github.com/alexandre-zatti/kakeibo
+            org.opencontainers.image.revision=${{ github.sha }}

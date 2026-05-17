@@ -21,7 +21,13 @@ RUN generated_client="$(find node_modules/.pnpm -path '*/node_modules/.prisma/cl
   && generated_prisma_dir="$(dirname "$(dirname "$generated_client")")" \
   && cp -R "$generated_prisma_dir" /tmp/generated-prisma-client
 
-COPY src ./src
+RUN mkdir -p src/consumers src/lib/schemas src/services src/types
+COPY src/consumers/whatsapp-consumer.ts ./src/consumers/whatsapp-consumer.ts
+COPY src/whatsapp ./src/whatsapp
+COPY src/lib/prisma.ts src/lib/logger.ts ./src/lib/
+COPY src/lib/schemas/receipt.ts ./src/lib/schemas/receipt.ts
+COPY src/services/grocery-import.ts src/services/whatsapp-command-run.ts ./src/services/
+COPY src/types/purchase.ts ./src/types/purchase.ts
 
 RUN pnpm exec esbuild src/consumers/whatsapp-consumer.ts \
   --bundle \

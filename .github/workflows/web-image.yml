@@ -1,0 +1,62 @@
+name: web image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "docker-entrypoint.sh"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "next.config.*"
+      - "tsconfig.json"
+      - "postcss.config.*"
+      - "prisma/**"
+      - "prisma.config.ts"
+      - "public/**"
+      - "src/**"
+      - ".github/workflows/web-image.yml"
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: alexandre-zatti/kakeibo-web
+  NEXT_PUBLIC_BETTER_AUTH_URL: https://kakeibo.zatti.tech
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64
+          build-args: |
+            NEXT_PUBLIC_BETTER_AUTH_URL=${{ env.NEXT_PUBLIC_BETTER_AUTH_URL }}
+          cache-from: type=gha,scope=kakeibo-web
+          cache-to: type=gha,scope=kakeibo-web,mode=max
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main
+          labels: |
+            org.opencontainers.image.source=https://github.com/alexandre-zatti/kakeibo
+            org.opencontainers.image.revision=${{ github.sha }}
