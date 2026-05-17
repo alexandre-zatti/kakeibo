@@ -16,6 +16,7 @@ services:
       KAKEIBO_WHATSAPP_DEFAULT_USER_ID: ${KAKEIBO_WHATSAPP_DEFAULT_USER_ID:-}
       CODEX_RUNNER_BASE_URL: http://codex-runner:8787
       CODEX_RUNNER_TOKEN: ${CODEX_RUNNER_TOKEN:?set CODEX_RUNNER_TOKEN in Coolify}
+      CODEX_RUNNER_EXPECTED_VERSION: ${CODEX_RUNNER_EXPECTED_VERSION:-0.130.0}
       KAKEIBO_INTERNAL_WEBHOOK_SECRET: ${KAKEIBO_INTERNAL_WEBHOOK_SECRET:?set KAKEIBO_INTERNAL_WEBHOOK_SECRET in Coolify}
       GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -127,7 +128,7 @@ services:
       - "3000"
 
   codex-runner:
-    image: ghcr.io/alexandre-zatti/kakeibo-codex-runner:codex-0.130.0-sha-efe119dde5068221ed635a86a5778fa3acc35c0d
+    image: ghcr.io/alexandre-zatti/kakeibo-codex-runner:codex-0.130.0-sha-34fa93eb38518bc9c358c9a467f30ffdd1a17ccc
     restart: unless-stopped
     environment:
       NODE_ENV: production
