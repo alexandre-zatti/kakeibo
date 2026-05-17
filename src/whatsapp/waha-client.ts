@@ -51,6 +51,27 @@ export class WahaClient {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  private resolveMediaUrl(url: string): string {
+    const baseUrl = new URL(this.baseUrl);
+
+    if (!url.startsWith("http")) {
+      return new URL(url.replace(/^\//, ""), `${baseUrl.origin}/`).toString();
+    }
+
+    const mediaUrl = new URL(url);
+    const pointsToLocalhost =
+      mediaUrl.hostname === "localhost" ||
+      mediaUrl.hostname === "127.0.0.1" ||
+      mediaUrl.hostname === "::1";
+
+    if (!pointsToLocalhost) return url;
+
+    mediaUrl.protocol = baseUrl.protocol;
+    mediaUrl.hostname = baseUrl.hostname;
+    mediaUrl.port = baseUrl.port;
+    return mediaUrl.toString();
+  }
+
   async getSession(): Promise<WahaSession> {
     return this.jsonRequest<WahaSession>(`/api/sessions/${encodeURIComponent(this.session)}`);
   }
@@ -104,9 +125,7 @@ export class WahaClient {
   }
 
   async downloadMedia(url: string): Promise<{ buffer: Buffer; contentType: string | null }> {
-    const resolvedUrl = url.startsWith("http")
-      ? url
-      : `${this.baseUrl.replace(/\/$/, "")}/${url.replace(/^\//, "")}`;
+    const resolvedUrl = this.resolveMediaUrl(url);
     const response = await fetch(resolvedUrl, {
       headers: this.headers(),
     });
