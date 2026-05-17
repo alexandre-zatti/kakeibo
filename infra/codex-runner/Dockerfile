@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 FROM node:22-bookworm-slim
 
 RUN apt-get update \
@@ -9,7 +11,8 @@ RUN apt-get update \
     ripgrep \
   && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g @openai/codex
+RUN --mount=type=cache,id=codex-runner-npm-cache,target=/root/.npm \
+  npm install -g @openai/codex@0.130.0
 
 RUN useradd --create-home --shell /bin/bash codex \
   && mkdir -p /home/codex/.codex /workspace/data \

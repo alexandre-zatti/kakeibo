@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 # =============================================================================
 # Stage 1: Dependencies
 # =============================================================================
@@ -15,7 +17,8 @@ RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies (frozen lockfile for reproducibility)
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=kakeibo-pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile --store-dir /pnpm/store
 
 # =============================================================================
 # Stage 2: Builder
@@ -30,11 +33,17 @@ RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy source code and configuration files
-COPY . .
+# Generate Prisma client before broad source copies to preserve cache
+COPY package.json pnpm-lock.yaml ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./prisma.config.ts
+COPY tsconfig.json ./tsconfig.json
 
 # Generate Prisma client (required before build)
 RUN pnpm exec prisma generate
+
+# Copy source code and configuration files
+COPY . .
 
 # Accept build arguments for public environment variables only
 # NEXT_PUBLIC_* vars are inlined into the JS bundle at build time
@@ -86,7 +95,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
 # Install Prisma CLI with dependencies for config file (dotenv, tsx for TypeScript)
-RUN mkdir -p /prisma-cli && cd /prisma-cli && npm init -y && npm install prisma@7.2.0 dotenv tsx
+RUN --mount=type=cache,id=kakeibo-npm-cache,target=/root/.npm \
+    mkdir -p /prisma-cli && cd /prisma-cli && npm init -y && npm install prisma@7.2.0 dotenv@17.2.3 tsx@4.21.0
 
 # Copy entrypoint script
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./

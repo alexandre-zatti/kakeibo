@@ -11,6 +11,7 @@ dist
 # Version control
 .git
 .gitignore
+.github
 
 # IDE and editor files
 .idea
@@ -45,6 +46,20 @@ coverage
 *.spec.tsx
 __tests__
 
+# Runtime data and local media artifacts
+data
+data/**
+uploads
+uploads/**
+public/uploads
+public/uploads/**
+media
+media/**
+.media
+.media/**
+.sessions
+.sessions/**
+
 # Misc
 .DS_Store
 *.pem
@@ -59,5 +74,18 @@ tsconfig.tsbuildinfo
 
 # Temporary files
 tmp
+tmp/**
 temp
+temp/**
+.tmp
+.tmp/**
+.cache
+.cache/**
 nul
+
+# Local databases
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.db
+*.db-*

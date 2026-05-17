@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 FROM node:22-alpine AS builder
 
 RUN apk add --no-cache libc6-compat
@@ -6,15 +8,21 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+COPY infra/whatsapp-consumer/package.json infra/whatsapp-consumer/pnpm-lock.yaml ./
+RUN --mount=type=cache,id=kakeibo-pnpm-store,target=/pnpm/store \
+  pnpm install --frozen-lockfile --store-dir /pnpm/store
 
 COPY prisma ./prisma
 COPY prisma.config.ts ./prisma.config.ts
-COPY tsconfig.json ./
-COPY src ./src
+COPY tsconfig.json ./tsconfig.json
 
 RUN pnpm exec prisma generate
+RUN generated_client="$(find node_modules/.pnpm -path '*/node_modules/.prisma/client/default.js' -print -quit)" \
+  && generated_prisma_dir="$(dirname "$(dirname "$generated_client")")" \
+  && cp -R "$generated_prisma_dir" /tmp/generated-prisma-client
+
+COPY src ./src
+
 RUN pnpm exec esbuild src/consumers/whatsapp-consumer.ts \
   --bundle \
   --platform=node \
@@ -22,7 +30,11 @@ RUN pnpm exec esbuild src/consumers/whatsapp-consumer.ts \
   --format=esm \
   --packages=external \
   --outfile=dist/whatsapp-consumer.mjs
-RUN pnpm prune --prod
+RUN CI=true pnpm prune --prod
+RUN prisma_client="$(find node_modules/.pnpm -path '*/node_modules/@prisma/client/default.js' -print -quit)" \
+  && prisma_node_modules="$(dirname "$(dirname "$(dirname "$prisma_client")")")" \
+  && rm -rf "$prisma_node_modules/.prisma" \
+  && cp -R /tmp/generated-prisma-client "$prisma_node_modules/.prisma"
 
 FROM node:22-alpine AS runner
 
