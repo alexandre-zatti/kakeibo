@@ -110,7 +110,7 @@ services:
       start_period: 10s
 
   waha:
-    image: devlikeapro/waha:latest
+    image: devlikeapro/waha@sha256:b579973365dff7b4514275f31f36d438d8fc7a77271085ff384d8ed92a12ccba
     restart: unless-stopped
     environment:
       TZ: America/Sao_Paulo
@@ -133,9 +133,7 @@ services:
       - "3000"
 
   codex-runner:
-    build:
-      context: ./infra/codex-runner
-      dockerfile: Dockerfile
+    image: ghcr.io/alexandre-zatti/kakeibo-codex-runner:codex-0.130.0-sha-efe119dde5068221ed635a86a5778fa3acc35c0d
     restart: unless-stopped
     environment:
       NODE_ENV: production
